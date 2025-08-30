@@ -12,12 +12,12 @@ import {
   basicAuthMiddleware,
   verifyCrmOwner,
 } from '../middleware/crmAuthMiddleware';
-import { Franchisee } from '../models/Franchisee';
+import { Organization } from '../models/Organization';
 import { Role } from '../models/Role';
 import { User } from '../models/User';
-import { UserFranchiseeRole } from '../models/UserFranchiseeRole';
+import { UserOrganizationRole } from '../models/UserOrganizationRole';
 import authRoutes from './auth';
-import franchiseeRoutes from './franchisee';
+import organizationRoutes from './organization';
 
 interface CreateRoleBody {
   name: string;
@@ -36,13 +36,13 @@ interface CreateCrmOwnerBody {
   lastName: string;
 }
 
-interface CreateFranchiseeAdminBody {
+interface CreateOrganizationAdminBody {
   email: string;
   password: string;
   username: string;
   firstName: string;
   lastName: string;
-  franchiseeId: string;
+  organizationId: string;
 }
 
 const router = Router();
@@ -51,7 +51,7 @@ const router = Router();
 router.use('/auth', authRoutes);
 
 // Mount franchisee routes
-router.use('/franchisees', franchiseeRoutes);
+router.use('/organizations', organizationRoutes);
 
 // Create new role (CRM Owner only)
 router.post(
@@ -153,16 +153,16 @@ router.post(
         throw new Error('Failed to create user');
       }
 
-      // add to userfranchisee role
-      const userFranchiseeRole = await UserFranchiseeRole.create({
+      // add to userorganization role
+      const userOrganizationRole = await UserOrganizationRole.create({
         userId: user.userId,
-        franchiseeId: uuidv4(),
+        organizationId: uuidv4(),
         roleId: crmOwnerRole?.roleId,
         status: 'active',
       });
 
-      if (!userFranchiseeRole) {
-        throw new Error('Failed to create user franchisee role');
+      if (!userOrganizationRole) {
+        throw new Error('Failed to create user organization role');
       }
 
       await session.commitTransaction();
@@ -192,15 +192,15 @@ router.post(
 
 // Create Franchisee Admin (CRM Owner only)
 router.post(
-  '/franchisee-admin',
+  '/organization-admin',
   verifyAccessToken,
   verifyCrmOwner,
-  async (req: Request<{}, {}, CreateFranchiseeAdminBody>, res: Response) => {
+  async (req: Request<{}, {}, CreateOrganizationAdminBody>, res: Response) => {
     const session = await mongoose.startSession();
     session.startTransaction();
 
     try {
-      const { email, password, username, firstName, lastName, franchiseeId } =
+      const { email, password, username, firstName, lastName, organizationId } =
         req.body;
 
       // Validate request body
@@ -210,7 +210,7 @@ router.post(
         !username ||
         !firstName ||
         !lastName ||
-        !franchiseeId
+        !organizationId
       ) {
         return res.status(400).json({
           message: 'All fields are required',
@@ -231,18 +231,18 @@ router.post(
         });
       }
 
-      // Check if franchisee exists
-      const franchisee = await Franchisee.findOne({ franchiseeId });
-      if (!franchisee) {
+      // Check if organization exists
+      const organization = await Organization.findOne({ organizationId });
+      if (!organization) {
         return res.status(404).json({
-          message: 'Franchisee not found',
+          message: 'Organization not found',
         });
       }
 
-      // Get Franchisee Admin role
-      const adminRole = await Role.findOne({ name: 'Franchisee Admin' });
+      // Get Organization Admin role
+      const adminRole = await Role.findOne({ name: 'Organization Admin' });
       if (!adminRole) {
-        throw new Error('Franchisee Admin role not found');
+        throw new Error('Organization Admin role not found');
       }
 
       // Create user
@@ -264,12 +264,12 @@ router.post(
         throw new Error('Failed to create user');
       }
 
-      // Assign Franchisee Admin role
-      await UserFranchiseeRole.create(
+      // Assign Organization Admin role
+      await UserOrganizationRole.create(
         [
           {
             userId: user.userId,
-            franchiseeId,
+            organizationId,
             roleId: adminRole.roleId,
             status: 'active',
             isPrimary: true,

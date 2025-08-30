@@ -11,6 +11,7 @@ import {
 import { Role } from '../models/Role';
 import { IUser, User } from '../models/User';
 import { parseTimeString } from '../utils/timeUtils';
+import mongoose from 'mongoose';
 
 const router = Router();
 
@@ -36,8 +37,8 @@ router.post(
   '/register',
   async (req: Request<{}, {}, RegisterBody>, res: Response) => {
     // Start a new session for the transaction
-    // const session = await mongoose.startSession();
-    // session.startTransaction();
+    const session = await mongoose.startSession();
+    session.startTransaction();
 
     try {
       const { email, password, username, firstName, lastName } = req.body;
@@ -50,7 +51,7 @@ router.post(
         !firstName ||
         !lastName
       ) {
-        // await session.endSession();
+        await session.endSession();
         return res.status(400).json({
           message:
             'All fields are required: email, password, username, firstName, lastName',
@@ -66,8 +67,8 @@ router.post(
       });
 
       if (existingUser) {
-        // await session.abortTransaction();
-        // session.endSession();
+        await session.abortTransaction();
+        session.endSession();
         return res.status(409).json({
           message: 'User with this email or username already exists',
         });
@@ -75,8 +76,8 @@ router.post(
       // Get admin role - do this outside transaction as it's just a read
       const adminRole = await Role.findOne({ name: 'Admin' });
       if (!adminRole) {
-        // await session.abortTransaction();
-        // session.endSession();
+        await session.abortTransaction();
+        session.endSession();
         return res.status(500).json({
           message:
             'Required roles not found. Please run system initialization.',
@@ -93,8 +94,8 @@ router.post(
             firstName,
             lastName,
           },
-        ]
-        // { session }
+        ],
+        { session }
       );
 
       const user = users[0];
@@ -106,8 +107,8 @@ router.post(
       const { accessToken, refreshToken } = await generateTokens(user.userId);
 
       // Commit the transaction
-      // await session.commitTransaction();
-      // session.endSession();
+      await session.commitTransaction();
+      session.endSession();
       // Set refresh token in HttpOnly cookie
       setRefreshTokenCookie(res, refreshToken);
 
@@ -124,8 +125,8 @@ router.post(
       });
     } catch (error) {
       // If anything fails, abort the transaction
-      // await session.abortTransaction();
-      // session.endSession();
+      await session.abortTransaction();
+      session.endSession();
       return res.status(500).json({ message: 'Internal server error' });
     }
   }
