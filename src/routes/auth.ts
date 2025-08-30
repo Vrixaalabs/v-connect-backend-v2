@@ -10,7 +10,6 @@ import {
 } from '../middleware/authMiddleware';
 import { Role } from '../models/Role';
 import { IUser, User } from '../models/User';
-import { UserFranchiseeRole } from '../models/UserFranchiseeRole';
 import { parseTimeString } from '../utils/timeUtils';
 
 const router = Router();
@@ -25,7 +24,6 @@ interface RegisterBody {
   username: string;
   firstName: string;
   lastName: string;
-  franchiseeId: string;
 }
 
 interface LoginBody {
@@ -42,8 +40,7 @@ router.post(
     // session.startTransaction();
 
     try {
-      const { email, password, username, firstName, lastName, franchiseeId } =
-        req.body;
+      const { email, password, username, firstName, lastName } = req.body;
 
       // Validate request body
       if (
@@ -51,13 +48,12 @@ router.post(
         !password ||
         !username ||
         !firstName ||
-        !lastName ||
-        !franchiseeId
+        !lastName
       ) {
         // await session.endSession();
         return res.status(400).json({
           message:
-            'All fields are required: email, password, username, firstName, lastName, franchiseeId',
+            'All fields are required: email, password, username, firstName, lastName',
         });
       }
 
@@ -106,23 +102,6 @@ router.post(
         throw new Error('Failed to create user');
       }
 
-      // Add user to franchisee as admin within transaction
-      await UserFranchiseeRole.create(
-        [
-          {
-            userId: user.userId,
-            franchiseeId: franchiseeId,
-            roleId: adminRole.roleId,
-            status: 'active',
-            branchRoleId: '1',
-            isPrimary: true,
-            metadata: {
-              acceptedAt: new Date(),
-            },
-          },
-        ]
-        // { session }
-      );
       // Generate tokens
       const { accessToken, refreshToken } = await generateTokens(user.userId);
 
@@ -135,9 +114,6 @@ router.post(
       // Return only the access token in response
       return res.status(201).json({
         accessToken,
-        franchisee: {
-          franchiseeId: franchiseeId,
-        },
         user: {
           userId: user.userId,
           email: user.email,
