@@ -88,7 +88,7 @@ export async function ensureSystemRoles(): Promise<void> {
       isSystemRole: true,
     },
     {
-      name: 'Franchisee Admin',
+      name: 'Organization Admin',
       description: 'Full franchisee access',
       permissions: [
         {
@@ -100,7 +100,7 @@ export async function ensureSystemRoles(): Promise<void> {
           actions: ['read'],
         },
         {
-          resource: 'franchisee',
+          resource: 'organization',
           actions: ['read', 'update'],
         },
       ],
@@ -115,7 +115,7 @@ export async function ensureSystemRoles(): Promise<void> {
           actions: ['read'],
         },
         {
-          resource: 'franchisee',
+          resource: 'organization',
           actions: ['read'],
         },
       ],
