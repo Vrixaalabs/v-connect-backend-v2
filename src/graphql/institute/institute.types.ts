@@ -124,6 +124,7 @@ export const instituteTypes = gql`
     state: String
     isVerified: Boolean
     isActive: Boolean
+    search: String
   }
 
   type InstituteResponse {

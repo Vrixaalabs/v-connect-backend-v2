@@ -1,5 +1,4 @@
-import { Context } from '../context';
-import { IInstitute, IDepartment } from '../../models/Institute';
+import { IInstitute } from '../../models/Institute';
 import { IInstituteRole } from '../../models/InstituteRole';
 import { IInstituteJoinRequest } from '../../models/InstituteJoinRequest';
 
@@ -120,4 +119,5 @@ export interface InstituteFilterInput {
   state?: string;
   isVerified?: boolean;
   isActive?: boolean;
+  search?: string;
 }

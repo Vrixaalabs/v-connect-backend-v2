@@ -72,7 +72,7 @@ export const superAdminMutations = {
 
       // If 2FA is not enabled, generate token
       const token = sign(
-        { userId: user._id, role: user.role },
+        { userId: user.userId, role: user.role },
         config.jwt.accessSecret,
         { expiresIn: config.jwt.accessExpiresIn } as SignOptions
       );
@@ -120,7 +120,7 @@ export const superAdminMutations = {
 
       // Generate token
       const token = sign(
-        { userId: user._id, role: user.role },
+        { userId: user.userId, role: user.role },
         config.jwt.accessSecret,
         { expiresIn: config.jwt.accessExpiresIn } as SignOptions
       );

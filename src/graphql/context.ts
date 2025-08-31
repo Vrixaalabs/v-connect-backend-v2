@@ -39,17 +39,19 @@ export async function context({
       config.jwt.accessSecret as jwt.Secret
     ) as {
       userId: string;
-      type: string;
+      role: string;
     };
+    console.log("decoded token from context");
+    console.log(decoded);
 
-    if (decoded.type !== 'access') {
-          return {
-      user: null,
-      isAuthenticated: false,
-      isSuperAdmin: false,
-      req,
-    };
-    }
+    // if (decoded.type !== 'access') {
+    //       return {
+    //   user: null,
+    //   isAuthenticated: false,
+    //   isSuperAdmin: false,
+    //   req,
+    // };
+    // }
 
     const user = await User.findOne({ userId: decoded.userId });
 
