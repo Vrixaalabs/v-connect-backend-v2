@@ -17,6 +17,7 @@ export interface IInstitute {
   description: string;
   logo?: string;
   banner?: string;
+  coverImage?: string;
   website?: string;
   email: string;
   phone: string;
@@ -30,6 +31,8 @@ export interface IInstitute {
   };
   departments: IDepartment[];
   followers: string[]; // Array of userIds
+  studentsCount: number;
+  followersCount: number;
   isVerified: boolean;
   isActive: boolean;
   createdAt: Date;
@@ -82,6 +85,7 @@ const InstituteSchema = new Schema<IInstitute>({
   },
   logo: String,
   banner: String,
+  coverImage: String,
   website: String,
   email: {
     type: String,
@@ -120,6 +124,14 @@ const InstituteSchema = new Schema<IInstitute>({
     type: String,
     ref: 'User',
   }],
+  studentsCount: {
+    type: Number,
+    default: 0,
+  },
+  followersCount: {
+    type: Number,
+    default: 0,
+  },
   isVerified: {
     type: Boolean,
     default: false,

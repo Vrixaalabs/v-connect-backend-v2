@@ -26,12 +26,15 @@ export const instituteTypes = gql`
     description: String!
     logo: String
     banner: String
+    coverImage: String
     website: String
     email: String!
     phone: String!
     address: InstituteAddress!
     departments: [Department!]!
     followers: [String!]!
+    studentsCount: Int!
+    followersCount: Int!
     isVerified: Boolean!
     isActive: Boolean!
     createdAt: String!
@@ -58,22 +61,6 @@ export const instituteTypes = gql`
     departmentId: String
     assignedBy: String!
     isActive: Boolean!
-    createdAt: String!
-    updatedAt: String!
-  }
-
-  type InstituteJoinRequest {
-    requestId: ID!
-    instituteId: ID!
-    userId: ID!
-    fullName: String!
-    email: String!
-    rollNumber: String!
-    departmentId: ID!
-    batch: String!
-    status: String!
-    approvedBy: String
-    rejectionReason: String
     createdAt: String!
     updatedAt: String!
   }
@@ -131,15 +118,6 @@ export const instituteTypes = gql`
     isDefault: Boolean
   }
 
-  input CreateJoinRequestInput {
-    instituteId: ID!
-    fullName: String!
-    email: String!
-    rollNumber: String!
-    departmentId: ID!
-    batch: String!
-  }
-
   input InstituteFilterInput {
     name: String
     city: String
@@ -175,19 +153,12 @@ export const instituteTypes = gql`
     roles: [InstituteRole!]!
   }
 
-  type JoinRequestResponse {
-    success: Boolean!
-    message: String!
-    request: InstituteJoinRequest
-  }
-
-  type JoinRequestsResponse {
-    success: Boolean!
-    message: String!
-    requests: [InstituteJoinRequest!]!
-    total: Int!
-    page: Int!
-    limit: Int!
+  input CreateJoinRequestInput {
+    instituteId: ID!
+    userId: ID!
+    status: String!
+    createdAt: String!
+    updatedAt: String!
   }
 
   extend type Query {
@@ -204,39 +175,9 @@ export const instituteTypes = gql`
     # Role queries
     getInstituteRoles(instituteId: ID!): InstituteRolesResponse!
     getInstituteRole(roleId: ID!): InstituteRoleResponse!
-    
-    # Join request queries
-    getJoinRequests(
-      instituteId: ID!
-      status: String
-      page: Int = 1
-      limit: Int = 10
-    ): JoinRequestsResponse!
-    
-    getJoinRequest(requestId: ID!): JoinRequestResponse!
   }
 
-  extend type Mutation {
-    # Institute mutations
-    createInstitute(input: CreateInstituteInput!): InstituteResponse!
-    updateInstitute(instituteId: ID!, input: UpdateInstituteInput!): InstituteResponse!
-    deleteInstitute(instituteId: ID!): InstituteResponse!
-    followInstitute(instituteId: ID!): InstituteResponse!
-    unfollowInstitute(instituteId: ID!): InstituteResponse!
-    
-    # Role mutations
-    createInstituteRole(
-      instituteId: ID!
-      input: CreateInstituteRoleInput!
-    ): InstituteRoleResponse!
-    
-    updateInstituteRole(
-      roleId: ID!
-      input: UpdateInstituteRoleInput!
-    ): InstituteRoleResponse!
-    
-    deleteInstituteRole(roleId: ID!): InstituteRoleResponse!
-    
+  extend type Mutation {    
     assignInstituteRole(
       instituteId: ID!
       userId: ID!
@@ -248,10 +189,15 @@ export const instituteTypes = gql`
       instituteId: ID!
       userId: ID!
     ): InstituteRoleResponse!
-    
-    # Join request mutations
+
+    # Institute mutations
+    followInstitute(instituteId: ID!): InstituteResponse!
+    unfollowInstitute(instituteId: ID!): InstituteResponse!
+
+    createInstituteRole(instituteId: ID!, input: CreateInstituteRoleInput!): InstituteRoleResponse!
+    updateInstituteRole(roleId: ID!, input: UpdateInstituteRoleInput!): InstituteRoleResponse!
+    deleteInstituteRole(roleId: ID!): InstituteRoleResponse!
+
     createJoinRequest(input: CreateJoinRequestInput!): JoinRequestResponse!
-    approveJoinRequest(requestId: ID!): JoinRequestResponse!
-    rejectJoinRequest(requestId: ID!, reason: String!): JoinRequestResponse!
   }
 `;

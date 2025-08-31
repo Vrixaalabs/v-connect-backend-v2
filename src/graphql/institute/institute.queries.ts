@@ -1,8 +1,9 @@
-import { Context } from '../context';
+import { GraphQLContext } from '../context';
 import { createError } from '../../middleware/errorHandler';
 import { Institute } from '../../models/Institute';
 import { InstituteRole } from '../../models/InstituteRole';
 import { InstituteJoinRequest } from '../../models/InstituteJoinRequest';
+import { InstituteUserRole } from '../../models/InstituteUserRole';
 import { InstituteFilterInput } from './institute.interfaces';
 import { BaseError } from '../../types/errors/base.error';
 
@@ -10,7 +11,7 @@ export const instituteQueries = {
   searchInstitutes: async (
     _: unknown,
     { filter, page = 1, limit = 10 }: { filter?: InstituteFilterInput; page: number; limit: number },
-    { isAuthenticated }: Context
+    { isAuthenticated }: GraphQLContext
   ) => {
     try {
       if (!isAuthenticated) {
@@ -65,7 +66,7 @@ export const instituteQueries = {
   getInstituteBySlug: async (
     _: unknown,
     { slug }: { slug: string },
-    { isAuthenticated }: Context
+    { isAuthenticated }: GraphQLContext
   ) => {
     try {
       if (!isAuthenticated) {
@@ -101,7 +102,7 @@ export const instituteQueries = {
   getInstituteById: async (
     _: unknown,
     { instituteId }: { instituteId: string },
-    { isAuthenticated }: Context
+    { isAuthenticated }: GraphQLContext
   ) => {
     try {
       if (!isAuthenticated) {
@@ -137,7 +138,7 @@ export const instituteQueries = {
   getInstituteRoles: async (
     _: unknown,
     { instituteId }: { instituteId: string },
-    { isAuthenticated }: Context
+    { isAuthenticated }: GraphQLContext
   ) => {
     try {
       if (!isAuthenticated) {
@@ -167,7 +168,7 @@ export const instituteQueries = {
   getInstituteRole: async (
     _: unknown,
     { roleId }: { roleId: string },
-    { isAuthenticated }: Context
+    { isAuthenticated }: GraphQLContext
   ) => {
     try {
       if (!isAuthenticated) {
@@ -195,84 +196,6 @@ export const instituteQueries = {
         operation: 'getRole',
         entityType: 'InstituteRole',
         roleId,
-        error,
-      });
-    }
-  },
-
-  getJoinRequests: async (
-    _: unknown,
-    { instituteId, status, page = 1, limit = 10 }: { instituteId: string; status?: string; page: number; limit: number },
-    { isAuthenticated }: Context
-  ) => {
-    try {
-      if (!isAuthenticated) {
-        throw createError.authentication('Not authenticated');
-      }
-
-      const query: any = { instituteId };
-      if (status) {
-        query.status = status;
-      }
-
-      const total = await InstituteJoinRequest.countDocuments(query);
-      const requests = await InstituteJoinRequest.find(query)
-        .skip((page - 1) * limit)
-        .limit(limit)
-        .sort({ createdAt: -1 });
-
-      return {
-        success: true,
-        message: 'Join requests fetched successfully',
-        requests,
-        total,
-        page,
-        limit,
-      };
-    } catch (error) {
-      if (error instanceof BaseError) {
-        throw error;
-      }
-      throw createError.database('Failed to fetch join requests', {
-        operation: 'getJoinRequests',
-        entityType: 'InstituteJoinRequest',
-        instituteId,
-        error,
-      });
-    }
-  },
-
-  getJoinRequest: async (
-    _: unknown,
-    { requestId }: { requestId: string },
-    { isAuthenticated }: Context
-  ) => {
-    try {
-      if (!isAuthenticated) {
-        throw createError.authentication('Not authenticated');
-      }
-
-      const request = await InstituteJoinRequest.findOne({ requestId });
-      if (!request) {
-        throw createError.notFound(`Join request with ID ${requestId} not found`, {
-          entityType: 'InstituteJoinRequest',
-          entityId: requestId,
-        });
-      }
-
-      return {
-        success: true,
-        message: 'Join request fetched successfully',
-        request,
-      };
-    } catch (error) {
-      if (error instanceof BaseError) {
-        throw error;
-      }
-      throw createError.database('Failed to fetch join request', {
-        operation: 'getJoinRequest',
-        entityType: 'InstituteJoinRequest',
-        requestId,
         error,
       });
     }

@@ -1,4 +1,4 @@
-import { Context } from '../context';
+import { GraphQLContext } from '../context';
 import { createError } from '../../middleware/errorHandler';
 import { Institute } from '../../models/Institute';
 import { InstituteRole } from '../../models/InstituteRole';
@@ -13,162 +13,13 @@ import {
 } from './institute.interfaces';
 import { BaseError } from '../../types/errors/base.error';
 
+import { User } from '../../models/User';
+
 export const instituteMutations = {
-  createInstitute: async (
-    _: unknown,
-    { input }: { input: CreateInstituteInput },
-    { isAuthenticated, userId }: Context
-  ) => {
-    try {
-      if (!isAuthenticated) {
-        throw createError.authentication('Not authenticated');
-      }
-
-      // Check if user is super admin
-      // TODO: Add super admin check
-
-      const institute = new Institute({
-        ...input,
-      });
-      await institute.save();
-
-      // Create default roles
-      const defaultRoles = [
-        {
-          name: 'Admin',
-          description: 'Institute administrator with full access',
-          permissions: ['MANAGE_ROLES', 'MANAGE_USERS', 'MANAGE_DEPARTMENTS', 'MANAGE_REQUESTS'],
-          isDefault: true,
-        },
-        {
-          name: 'Faculty',
-          description: 'Faculty member with limited access',
-          permissions: ['VIEW_USERS', 'VIEW_DEPARTMENTS'],
-          isDefault: true,
-        },
-        {
-          name: 'Student',
-          description: 'Student with basic access',
-          permissions: ['VIEW_DEPARTMENTS'],
-          isDefault: true,
-        },
-      ];
-
-      await Promise.all(
-        defaultRoles.map(role =>
-          InstituteRole.create({
-            ...role,
-            instituteId: institute.instituteId,
-            createdBy: userId,
-          })
-        )
-      );
-
-      return {
-        success: true,
-        message: 'Institute created successfully',
-        institute,
-      };
-    } catch (error) {
-      if (error instanceof BaseError) {
-        throw error;
-      }
-      throw createError.database('Failed to create institute', {
-        operation: 'create',
-        entityType: 'Institute',
-        error,
-      });
-    }
-  },
-
-  updateInstitute: async (
-    _: unknown,
-    { instituteId, input }: { instituteId: string; input: UpdateInstituteInput },
-    { isAuthenticated }: Context
-  ) => {
-    try {
-      if (!isAuthenticated) {
-        throw createError.authentication('Not authenticated');
-      }
-
-      const institute = await Institute.findOneAndUpdate(
-        { instituteId },
-        { $set: input },
-        { new: true }
-      );
-
-      if (!institute) {
-        throw createError.notFound(`Institute with ID ${instituteId} not found`, {
-          entityType: 'Institute',
-          entityId: instituteId,
-        });
-      }
-
-      return {
-        success: true,
-        message: 'Institute updated successfully',
-        institute,
-      };
-    } catch (error) {
-      if (error instanceof BaseError) {
-        throw error;
-      }
-      throw createError.database('Failed to update institute', {
-        operation: 'update',
-        entityType: 'Institute',
-        entityId: instituteId,
-        error,
-      });
-    }
-  },
-
-  deleteInstitute: async (
-    _: unknown,
-    { instituteId }: { instituteId: string },
-    { isAuthenticated }: Context
-  ) => {
-    try {
-      if (!isAuthenticated) {
-        throw createError.authentication('Not authenticated');
-      }
-
-      const institute = await Institute.findOneAndDelete({ instituteId });
-      if (!institute) {
-        throw createError.notFound(`Institute with ID ${instituteId} not found`, {
-          entityType: 'Institute',
-          entityId: instituteId,
-        });
-      }
-
-      // Delete related data
-      await Promise.all([
-        InstituteRole.deleteMany({ instituteId }),
-        InstituteUserRole.deleteMany({ instituteId }),
-        InstituteJoinRequest.deleteMany({ instituteId }),
-      ]);
-
-      return {
-        success: true,
-        message: 'Institute deleted successfully',
-        institute,
-      };
-    } catch (error) {
-      if (error instanceof BaseError) {
-        throw error;
-      }
-      throw createError.database('Failed to delete institute', {
-        operation: 'delete',
-        entityType: 'Institute',
-        entityId: instituteId,
-        error,
-      });
-    }
-  },
-
   followInstitute: async (
     _: unknown,
     { instituteId }: { instituteId: string },
-    { isAuthenticated, userId }: Context
+    { isAuthenticated, isSuperAdmin, user }: GraphQLContext
   ) => {
     try {
       if (!isAuthenticated) {
@@ -177,7 +28,7 @@ export const instituteMutations = {
 
       const institute = await Institute.findOneAndUpdate(
         { instituteId },
-        { $addToSet: { followers: userId } },
+        { $addToSet: { followers: user?.id } },
         { new: true }
       );
 
@@ -209,7 +60,7 @@ export const instituteMutations = {
   unfollowInstitute: async (
     _: unknown,
     { instituteId }: { instituteId: string },
-    { isAuthenticated, userId }: Context
+    { isAuthenticated, isSuperAdmin, user }: GraphQLContext
   ) => {
     try {
       if (!isAuthenticated) {
@@ -218,7 +69,7 @@ export const instituteMutations = {
 
       const institute = await Institute.findOneAndUpdate(
         { instituteId },
-        { $pull: { followers: userId } },
+        { $pull: { followers: user?.id } },
         { new: true }
       );
 
@@ -250,7 +101,7 @@ export const instituteMutations = {
   createInstituteRole: async (
     _: unknown,
     { instituteId, input }: { instituteId: string; input: CreateInstituteRoleInput },
-    { isAuthenticated, userId }: Context
+    { isAuthenticated, isSuperAdmin, user }: GraphQLContext
   ) => {
     try {
       if (!isAuthenticated) {
@@ -260,7 +111,7 @@ export const instituteMutations = {
       const role = await InstituteRole.create({
         ...input,
         instituteId,
-        createdBy: userId,
+        createdBy: user?.id,
       });
 
       return {
@@ -284,7 +135,7 @@ export const instituteMutations = {
   updateInstituteRole: async (
     _: unknown,
     { roleId, input }: { roleId: string; input: UpdateInstituteRoleInput },
-    { isAuthenticated }: Context
+    { isAuthenticated, isSuperAdmin }: GraphQLContext
   ) => {
     try {
       if (!isAuthenticated) {
@@ -325,7 +176,7 @@ export const instituteMutations = {
   deleteInstituteRole: async (
     _: unknown,
     { roleId }: { roleId: string },
-    { isAuthenticated }: Context
+    { isAuthenticated, isSuperAdmin }: GraphQLContext
   ) => {
     try {
       if (!isAuthenticated) {
@@ -346,7 +197,7 @@ export const instituteMutations = {
         });
       }
 
-      await role.remove();
+      await InstituteRole.deleteOne({ roleId });
       await InstituteUserRole.deleteMany({ roleId });
 
       return {
@@ -370,7 +221,7 @@ export const instituteMutations = {
   assignInstituteRole: async (
     _: unknown,
     { instituteId, userId, roleId, departmentId }: { instituteId: string; userId: string; roleId: string; departmentId?: string },
-    { isAuthenticated, userId: currentUserId }: Context
+    { isAuthenticated, isSuperAdmin, user }: GraphQLContext
   ) => {
     try {
       if (!isAuthenticated) {
@@ -386,10 +237,10 @@ export const instituteMutations = {
       // Create new role assignment
       const userRole = await InstituteUserRole.create({
         instituteId,
-        userId,
+        userId: user?.id,
         roleId,
         departmentId,
-        assignedBy: currentUserId,
+        assignedBy: user?.id,
         isActive: true,
       });
 
@@ -407,7 +258,7 @@ export const instituteMutations = {
       throw createError.database('Failed to assign institute role', {
         operation: 'assign',
         entityType: 'InstituteUserRole',
-        userId,
+        userId: user?.id,
         roleId,
         error,
       });
@@ -417,7 +268,7 @@ export const instituteMutations = {
   removeInstituteRole: async (
     _: unknown,
     { instituteId, userId }: { instituteId: string; userId: string },
-    { isAuthenticated }: Context
+    { isAuthenticated, isSuperAdmin }: GraphQLContext
   ) => {
     try {
       if (!isAuthenticated) {
@@ -449,7 +300,7 @@ export const instituteMutations = {
   createJoinRequest: async (
     _: unknown,
     { input }: { input: CreateJoinRequestInput },
-    { isAuthenticated, userId }: Context
+    { isAuthenticated, isSuperAdmin, user }: GraphQLContext
   ) => {
     try {
       if (!isAuthenticated) {
@@ -459,7 +310,7 @@ export const instituteMutations = {
       // Check if user already has a pending request
       const existingRequest = await InstituteJoinRequest.findOne({
         instituteId: input.instituteId,
-        userId,
+        userId: user?.id,
         status: 'pending',
       });
 
@@ -471,7 +322,7 @@ export const instituteMutations = {
 
       const request = await InstituteJoinRequest.create({
         ...input,
-        userId,
+        userId: user?.id,
         status: 'pending',
       });
 
@@ -487,121 +338,6 @@ export const instituteMutations = {
       throw createError.database('Failed to create join request', {
         operation: 'create',
         entityType: 'InstituteJoinRequest',
-        error,
-      });
-    }
-  },
-
-  approveJoinRequest: async (
-    _: unknown,
-    { requestId }: { requestId: string },
-    { isAuthenticated, userId }: Context
-  ) => {
-    try {
-      if (!isAuthenticated) {
-        throw createError.authentication('Not authenticated');
-      }
-
-      const request = await InstituteJoinRequest.findOneAndUpdate(
-        { requestId, status: 'pending' },
-        {
-          $set: {
-            status: 'approved',
-            approvedBy: userId,
-          },
-        },
-        { new: true }
-      );
-
-      if (!request) {
-        throw createError.notFound(`Join request with ID ${requestId} not found`, {
-          entityType: 'InstituteJoinRequest',
-          entityId: requestId,
-        });
-      }
-
-      // Get student role
-      const studentRole = await InstituteRole.findOne({
-        instituteId: request.instituteId,
-        name: 'Student',
-      });
-
-      if (!studentRole) {
-        throw createError.notFound('Student role not found', {
-          entityType: 'InstituteRole',
-          instituteId: request.instituteId,
-        });
-      }
-
-      // Assign student role
-      await InstituteUserRole.create({
-        instituteId: request.instituteId,
-        userId: request.userId,
-        roleId: studentRole.roleId,
-        departmentId: request.departmentId,
-        assignedBy: userId,
-        isActive: true,
-      });
-
-      return {
-        success: true,
-        message: 'Join request approved successfully',
-        request,
-      };
-    } catch (error) {
-      if (error instanceof BaseError) {
-        throw error;
-      }
-      throw createError.database('Failed to approve join request', {
-        operation: 'approve',
-        entityType: 'InstituteJoinRequest',
-        requestId,
-        error,
-      });
-    }
-  },
-
-  rejectJoinRequest: async (
-    _: unknown,
-    { requestId, reason }: { requestId: string; reason: string },
-    { isAuthenticated }: Context
-  ) => {
-    try {
-      if (!isAuthenticated) {
-        throw createError.authentication('Not authenticated');
-      }
-
-      const request = await InstituteJoinRequest.findOneAndUpdate(
-        { requestId, status: 'pending' },
-        {
-          $set: {
-            status: 'rejected',
-            rejectionReason: reason,
-          },
-        },
-        { new: true }
-      );
-
-      if (!request) {
-        throw createError.notFound(`Join request with ID ${requestId} not found`, {
-          entityType: 'InstituteJoinRequest',
-          entityId: requestId,
-        });
-      }
-
-      return {
-        success: true,
-        message: 'Join request rejected successfully',
-        request,
-      };
-    } catch (error) {
-      if (error instanceof BaseError) {
-        throw error;
-      }
-      throw createError.database('Failed to reject join request', {
-        operation: 'reject',
-        entityType: 'InstituteJoinRequest',
-        requestId,
         error,
       });
     }
