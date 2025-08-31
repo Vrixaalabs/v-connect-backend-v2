@@ -93,14 +93,16 @@ export const verifyAccessToken = async (
         config.jwt.accessSecret
       ) as unknown as TokenPayload;
 
-      if (decoded.type !== 'access') {
-        return await handleTokenRefresh(req, res, next);
-      }
+      // if (decoded.type !== 'access') {
+      //   return await handleTokenRefresh(req, res, next);
+      // }
 
       const user = await User.findOne({ userId: decoded.userId });
       if (!user) {
+        console.log('User not found with userId:', decoded.userId);
         return res.status(401).json({ message: 'User not found' });
       }
+      console.log('Found user:', user.email);
 
       req.user = user;
       req.accessToken = token;
@@ -148,8 +150,10 @@ async function handleTokenRefresh(
     // Find user
     const user = await User.findOne({ userId });
     if (!user) {
+      console.log('User not found during token refresh with userId:', userId);
       return res.status(401).json({ message: 'User not found' });
     }
+    console.log('Found user during token refresh:', user.email);
 
     // Set user and new access token in request
     req.user = user;
