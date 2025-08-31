@@ -2,7 +2,17 @@ import { GraphQLContext } from '../context';
 import { createError } from '../../middleware/errorHandler';
 import { Institute } from '../../models/Institute';
 import { InstituteUserRole } from '../../models/InstituteUserRole';
+import { User } from '../../models/User';
 import { BaseError } from '../../types/errors/base.error';
+import {
+  SuperAdminDashboardStats,
+  RecentActivity,
+  SystemStatus,
+  GetRecentActivitiesArgs,
+  GetInstituteAdminsArgs,
+  InstituteAdminsResponse,
+  InstituteAdminResponse,
+} from './super-admin.interfaces';
 
 export const superAdminQueries = {
   getSuperAdminDashboardStats: async (
@@ -53,7 +63,7 @@ export const superAdminQueries = {
 
   getRecentActivities: async (
     _: unknown,
-    { limit = 10 }: { limit: number },
+    { limit = 10 }: GetRecentActivitiesArgs,
     { isAuthenticated, isSuperAdmin }: GraphQLContext
   ) => {
     try {
@@ -133,7 +143,7 @@ export const superAdminQueries = {
 
   getInstituteAdmins: async (
     _: unknown,
-    { page = 1, limit = 10, search }: { page: number; limit: number; search?: string },
+    { page = 1, limit = 10, search }: GetInstituteAdminsArgs,
     { isAuthenticated, isSuperAdmin }: GraphQLContext
   ) => {
     try {
@@ -172,6 +182,39 @@ export const superAdminQueries = {
       throw createError.database('Failed to fetch institute admins', {
         operation: 'getAdmins',
         entityType: 'InstituteUserRole',
+        error,
+      });
+    }
+  },
+
+  getSuperAdminSettings: async (
+    _: unknown,
+    __: unknown,
+    { isAuthenticated, isSuperAdmin, user }: GraphQLContext
+  ) => {
+    try {
+      if (!isAuthenticated) {
+        throw createError.authentication('Not authenticated');
+      }
+
+      if (!isSuperAdmin) {
+        throw createError.authorization('Only super admin can access these settings');
+      }
+
+      // Get settings from user document or a separate settings collection
+      const settings = await User.findById(user?.id).select('settings');
+
+      if (!settings) {
+        throw createError.notFound('Settings not found');
+      }
+
+      return settings;
+    } catch (error) {
+      if (error instanceof BaseError) {
+        throw error;
+      }
+      throw createError.database('Failed to fetch super admin settings', {
+        operation: 'getSuperAdminSettings',
         error,
       });
     }

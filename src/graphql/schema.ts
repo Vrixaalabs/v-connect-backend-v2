@@ -14,6 +14,7 @@ import { superAdminQueries } from './super-admin/super-admin.queries';
 import { superAdminMutations } from './super-admin/super-admin.mutations';
 import { adminQueries } from './admin/admin.queries';
 import { adminMutations } from './admin/admin.mutations';
+import { userTypes } from './user/user.types';
 
 const typeDefs = gql`
   type Query {
@@ -45,6 +46,7 @@ export const schema = makeExecutableSchema({
     instituteTypes,
     superAdminTypes,
     adminTypes,
+    userTypes,
   ],
   resolvers,
 

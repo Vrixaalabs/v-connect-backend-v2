@@ -1,16 +1,7 @@
-import { Schema, model } from 'mongoose';
+import { Schema, model, Document } from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
 
-export interface IDepartment {
-  id: string;
-  name: string;
-  code: string;
-  description?: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export interface IInstitute {
+export interface IInstitute extends Document {
   instituteId: string;
   name: string;
   slug: string;
@@ -29,40 +20,17 @@ export interface IInstitute {
     country: string;
     pinCode: string;
   };
-  departments: IDepartment[];
+  departmentCount: number;
   followers: string[]; // Array of userIds
   studentsCount: number;
   followersCount: number;
   isVerified: boolean;
   isActive: boolean;
+  createdBy?: string;
+  updatedBy?: string;
   createdAt: Date;
   updatedAt: Date;
 }
-
-const DepartmentSchema = new Schema<IDepartment>({
-  id: {
-    type: String,
-    default: () => uuidv4(),
-    unique: true,
-  },
-  name: {
-    type: String,
-    required: true,
-  },
-  code: {
-    type: String,
-    required: true,
-  },
-  description: String,
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
-  updatedAt: {
-    type: Date,
-    default: Date.now,
-  },
-});
 
 const InstituteSchema = new Schema<IInstitute>({
   instituteId: {
@@ -119,7 +87,10 @@ const InstituteSchema = new Schema<IInstitute>({
       required: true,
     },
   },
-  departments: [DepartmentSchema],
+  departmentCount: {
+    type: Number,
+    default: 0,
+  },
   followers: [{
     type: String,
     ref: 'User',
@@ -139,6 +110,14 @@ const InstituteSchema = new Schema<IInstitute>({
   isActive: {
     type: Boolean,
     default: true,
+  },
+  createdBy: {
+    type: String,
+    ref: 'User',
+  },
+  updatedBy: {
+    type: String,
+    ref: 'User',
   },
   createdAt: {
     type: Date,

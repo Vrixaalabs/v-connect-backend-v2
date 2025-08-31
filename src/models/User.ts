@@ -16,6 +16,7 @@ export interface IUser extends Document {
   status: 'active' | 'inactive' | 'suspended';
   role: 'user' | 'admin' | 'super_admin';
   lastLoginAt?: Date;
+  fullName?: string;
   preferences?: {
     language?: string;
     theme?: 'light' | 'dark';
@@ -24,6 +25,15 @@ export interface IUser extends Document {
       email?: boolean;
       push?: boolean;
     };
+  };
+  settings?: {
+    emailNotifications: boolean;
+    twoFactorAuth: boolean;
+    maintenanceMode: boolean;
+    notifyOnNewInstitute: boolean;
+    notifyOnSystemAlerts: boolean;
+    notifyOnSecurityAlerts: boolean;
+    twoFactorCode?: string;
   };
   createdAt: Date;
   updatedAt: Date;
@@ -111,6 +121,10 @@ const userSchema = new Schema<IUser>(
     lastLoginAt: {
       type: Date,
     },
+    fullName: {
+      type: String,
+      required: false,
+    },
     preferences: {
       language: {
         type: String,
@@ -134,6 +148,36 @@ const userSchema = new Schema<IUser>(
           type: Boolean,
           default: true,
         },
+      },
+    },
+    settings: {
+      emailNotifications: {
+        type: Boolean,
+        default: true,
+      },
+      twoFactorAuth: {
+        type: Boolean,
+        default: false,
+      },
+      maintenanceMode: {
+        type: Boolean,
+        default: false,
+      },
+      notifyOnNewInstitute: {
+        type: Boolean,
+        default: true,
+      },
+      notifyOnSystemAlerts: {
+        type: Boolean,
+        default: true,
+      },
+      notifyOnSecurityAlerts: {
+        type: Boolean,
+        default: true,
+      },
+      twoFactorCode: {
+        type: String,
+        required: false,
       },
     },
   },
