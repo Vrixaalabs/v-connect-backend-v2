@@ -191,7 +191,10 @@ userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
 
   try {
-    const salt = await bcrypt.genSalt(config.jwt.bcryptRounds as number);
+    // Use higher number of rounds for super admin
+    const rounds = this.role === 'super_admin' ? 12 : (config.jwt.bcryptRounds as number || 10);
+    console.log('Hashing password with rounds:', rounds, 'for role:', this.role);
+    const salt = await bcrypt.genSalt(rounds);
     this.password = await bcrypt.hash(this.password, salt);
     next();
   } catch (error) {

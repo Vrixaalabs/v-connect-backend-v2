@@ -33,29 +33,42 @@ export const superAdminMutations = {
     { email, password }: SuperAdminLoginInput
   ) => {
     try {
+      console.log('Login attempt for email:', email);
+      console.log('Provided password:', password);
+
       const user = await User.findOne({ email, role: 'super_admin' });
+      console.log('Found user:', user ? 'Yes' : 'No');
+      
       if (!user) {
         throw createError.authentication('Invalid credentials');
       }
 
-      const isValid = await compare(password, user.password);
-      if (!isValid) {
+      console.log('Stored hashed password:', user.password);
+      
+      // Try both the model method and direct comparison
+      const isValidModel = await user.comparePassword(password);
+      console.log('isValidModel:', isValidModel);
+      
+      const isValidDirect = await compare(password, user.password);
+      console.log('isValidDirect:', isValidDirect);
+
+      if (!isValidModel && !isValidDirect) {
         throw createError.authentication('Invalid credentials');
       }
 
       // Check if 2FA is enabled
-      if (user.settings?.twoFactorAuth) {
-        // Generate and send 2FA code
-        const code = Math.floor(100000 + Math.random() * 900000).toString();
-        await User.updateOne({ _id: user._id }, { 'settings.twoFactorCode': code });
-        // TODO: Send code via email
+      // if (user.settings?.twoFactorAuth) {
+      //   // Generate and send 2FA code
+      //   const code = Math.floor(100000 + Math.random() * 900000).toString();
+      //   await User.updateOne({ _id: user._id }, { 'settings.twoFactorCode': code });
+      //   // TODO: Send code via email
 
-        return {
-          success: true,
-          message: '2FA code sent to your email',
-          requiresTwoFactor: true,
-        };
-      }
+      //   return {
+      //     success: true,
+      //     message: '2FA code sent to your email',
+      //     requiresTwoFactor: true,
+      //   };
+      // }
 
       // If 2FA is not enabled, generate token
       const token = sign(
@@ -76,6 +89,7 @@ export const superAdminMutations = {
         },
       };
     } catch (error) {
+      console.error('Login failed', error);
       if (error instanceof BaseError) {
         throw error;
       }

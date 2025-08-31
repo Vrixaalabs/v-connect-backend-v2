@@ -1,5 +1,6 @@
 import { Request, Response, Router } from 'express';
 import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
 import { config } from '../config/app.config';
 import {
   clearRefreshTokenCookie,
@@ -12,6 +13,12 @@ import { Role } from '../models/Role';
 import { IUser, User } from '../models/User';
 import { parseTimeString } from '../utils/timeUtils';
 import mongoose from 'mongoose';
+
+// Predefined credentials for super admin creation
+// These should be set in environment variables in production
+const SUPER_ADMIN_SECRET = process.env.SUPER_ADMIN_SECRET || 'thisisasecretkey';
+const SUPER_ADMIN_VERIFICATION_ID = process.env.SUPER_ADMIN_VERIFICATION_ID || 'admin@vconnect.com';
+const SUPER_ADMIN_VERIFICATION_PASSWORD = process.env.SUPER_ADMIN_VERIFICATION_PASSWORD || 'admin123';
 
 const router = Router();
 
@@ -30,6 +37,17 @@ interface RegisterBody {
 interface LoginBody {
   email: string;
   password: string;
+}
+
+interface CreateSuperAdminBody {
+  verificationId: string;
+  verificationPassword: string;
+  secretKey: string;
+  email: string;
+  password: string;
+  username: string;
+  firstName: string;
+  lastName: string;
 }
 
 // Register endpoint
@@ -297,6 +315,138 @@ router.post(
         }
       }
       return res.status(401).json({ message: 'Invalid refresh token' });
+    }
+  }
+);
+
+// Create super admin endpoint
+router.post(
+  '/create-super-admin',
+  async (req: Request<{}, {}, CreateSuperAdminBody>, res: Response) => {
+    // Start a new session for the transaction
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+      const {
+        verificationId,
+        verificationPassword,
+        secretKey,
+        email,
+        password,
+        username,
+        firstName,
+        lastName,
+      } = req.body;
+
+      // Verify the predefined credentials
+      if (
+        verificationId !== SUPER_ADMIN_VERIFICATION_ID ||
+        verificationPassword !== SUPER_ADMIN_VERIFICATION_PASSWORD ||
+        secretKey !== SUPER_ADMIN_SECRET
+      ) {
+        await session.abortTransaction();
+        session.endSession();
+        return res.status(401).json({
+          message: 'Invalid verification credentials',
+        });
+      }
+
+      // Validate request body
+      if (!email || !password || !username || !firstName || !lastName) {
+        await session.abortTransaction();
+        session.endSession();
+        return res.status(400).json({
+          message:
+            'All fields are required: email, password, username, firstName, lastName',
+        });
+      }
+
+      // Check if super admin already exists
+      const existingSuperAdmin = await User.findOne({
+        $or: [
+          { email: email.toLowerCase() },
+          { username: username.toLowerCase() },
+        ],
+        role: 'super_admin',
+      });
+
+      if (existingSuperAdmin) {
+        await session.abortTransaction();
+        session.endSession();
+        return res.status(409).json({
+          message: 'Super admin with this email or username already exists',
+        });
+      }
+
+      // Create new super admin user within transaction
+      const users = await User.create(
+        [
+          {
+            email: email.toLowerCase(),
+            password, // Let the User model's pre-save hook handle password hashing
+            username: username.toLowerCase(),
+            firstName,
+            lastName,
+            role: 'super_admin',
+            isVerified: true, // Super admin is automatically verified
+            settings: {
+              emailNotifications: true,
+              twoFactorAuth: true, // Enable 2FA by default for super admin
+              maintenanceMode: false,
+              notifyOnNewInstitute: true,
+              notifyOnSystemAlerts: true,
+              notifyOnSecurityAlerts: true,
+            },
+          },
+        ],
+        { session }
+      );
+
+      const user = users[0];
+      if (!user) {
+        throw new Error('Failed to create super admin user');
+      }
+
+      // Generate tokens with extended expiry for first login
+      // Generate tokens
+      const { accessToken, refreshToken } = await generateTokens(
+        user.userId,
+        req.ip || req.connection.remoteAddress,
+        req.get('User-Agent')
+      );
+
+      // Commit the transaction
+      await session.commitTransaction();
+      session.endSession();
+
+      // Set refresh token in HttpOnly cookie
+      setRefreshTokenCookie(res, refreshToken);
+
+      // Return success response with access token and user info
+      return res.status(201).json({
+        message: 'Super admin created successfully',
+        accessToken,
+        user: {
+          userId: user.userId,
+          email: user.email,
+          username: user.username,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          role: user.role,
+        },
+      });
+    } catch (error) {
+      // If anything fails, abort the transaction
+      await session.abortTransaction();
+      session.endSession();
+
+      // Log the error for debugging but don't expose details
+      console.error('Super admin creation error:', error);
+
+      return res.status(500).json({
+        message: 'Failed to create super admin. Please try again later.',
+      });
     }
   }
 );
