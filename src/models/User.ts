@@ -14,7 +14,9 @@ export interface IUser extends Document {
   lastName: string;
   password: string;
   status: 'active' | 'inactive' | 'suspended';
+  role: 'user' | 'admin' | 'super_admin';
   lastLoginAt?: Date;
+  fullName?: string;
   preferences?: {
     language?: string;
     theme?: 'light' | 'dark';
@@ -23,6 +25,15 @@ export interface IUser extends Document {
       email?: boolean;
       push?: boolean;
     };
+  };
+  settings?: {
+    emailNotifications: boolean;
+    twoFactorAuth: boolean;
+    maintenanceMode: boolean;
+    notifyOnNewInstitute: boolean;
+    notifyOnSystemAlerts: boolean;
+    notifyOnSecurityAlerts: boolean;
+    twoFactorCode?: string;
   };
   createdAt: Date;
   updatedAt: Date;
@@ -102,8 +113,17 @@ const userSchema = new Schema<IUser>(
       enum: ['active', 'inactive', 'suspended'],
       default: 'active',
     },
+    role: {
+      type: String,
+      enum: ['user', 'admin', 'super_admin'],
+      default: 'user',
+    },
     lastLoginAt: {
       type: Date,
+    },
+    fullName: {
+      type: String,
+      required: false,
     },
     preferences: {
       language: {
@@ -130,6 +150,36 @@ const userSchema = new Schema<IUser>(
         },
       },
     },
+    settings: {
+      emailNotifications: {
+        type: Boolean,
+        default: true,
+      },
+      twoFactorAuth: {
+        type: Boolean,
+        default: false,
+      },
+      maintenanceMode: {
+        type: Boolean,
+        default: false,
+      },
+      notifyOnNewInstitute: {
+        type: Boolean,
+        default: true,
+      },
+      notifyOnSystemAlerts: {
+        type: Boolean,
+        default: true,
+      },
+      notifyOnSecurityAlerts: {
+        type: Boolean,
+        default: true,
+      },
+      twoFactorCode: {
+        type: String,
+        required: false,
+      },
+    },
   },
   {
     timestamps: true,
@@ -141,7 +191,10 @@ userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
 
   try {
-    const salt = await bcrypt.genSalt(config.jwt.bcryptRounds as number);
+    // Use higher number of rounds for super admin
+    const rounds = this.role === 'super_admin' ? 12 : (config.jwt.bcryptRounds as number || 10);
+    console.log('Hashing password with rounds:', rounds, 'for role:', this.role);
+    const salt = await bcrypt.genSalt(rounds);
     this.password = await bcrypt.hash(this.password, salt);
     next();
   } catch (error) {
