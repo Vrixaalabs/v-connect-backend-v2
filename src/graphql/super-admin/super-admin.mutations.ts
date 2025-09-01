@@ -17,7 +17,7 @@ import {
   UpdatePasswordInput,
   UpdateSuperAdminSettingsInput,
   SuperAdminAuthResponse,
-  BasicResponse,
+  BaseResponse,
   UserResponse,
   SuperAdminSettingsResponse,
   InstituteResponse,
@@ -25,13 +25,17 @@ import {
   AssignAdminInput,
   UpdateInstituteArgs,
   RemoveAdminArgs,
+  UpdatePasswordArgs,
+  UpdateSuperAdminProfileArgs,
+  UpdateSuperAdminSettingsArgs,
+  SuperAdmin2FAArgs,
 } from './super-admin.interfaces';
 
 export const superAdminMutations = {
   superAdminLogin: async (
     _: unknown,
     { email, password }: SuperAdminLoginInput
-  ) => {
+  ): Promise<SuperAdminAuthResponse> => {
     try {
       console.log('Login attempt for email:', email);
       console.log('Provided password:', password);
@@ -83,9 +87,15 @@ export const superAdminMutations = {
         token,
         requiresTwoFactor: false,
         user: {
-          id: user._id,
+          userId: user.userId,
           email: user.email,
+          username: user.username,
+          firstName: user.firstName,
+          lastName: user.lastName,
           role: user.role,
+          status: user.status,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt
         },
       };
     } catch (error) {
@@ -99,8 +109,8 @@ export const superAdminMutations = {
 
   verifySuperAdmin2FA: async (
     _: unknown,
-    { email, code }: SuperAdmin2FAInput
-  ) => {
+    { email, code }: SuperAdmin2FAArgs
+  ): Promise<SuperAdminAuthResponse> => {
     try {
       const user = await User.findOne({ 
         email, 
@@ -130,9 +140,15 @@ export const superAdminMutations = {
         message: 'Verification successful',
         token,
         user: {
-          id: user._id,
+          userId: user.userId,
           email: user.email,
+          username: user.username,
+          firstName: user.firstName,
+          lastName: user.lastName,
           role: user.role,
+          status: user.status,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt
         },
       };
     } catch (error) {
@@ -147,7 +163,7 @@ export const superAdminMutations = {
     _: unknown,
     __: unknown,
     { isAuthenticated, isSuperAdmin }: GraphQLContext
-  ) => {
+  ): Promise<BaseResponse> => {
     try {
       if (!isAuthenticated || !isSuperAdmin) {
         throw createError.authentication('Not authenticated');
@@ -168,9 +184,9 @@ export const superAdminMutations = {
 
   updateSuperAdminProfile: async (
     _: unknown,
-    { input }: { input: UpdateSuperAdminProfileInput },
+    { input }: UpdateSuperAdminProfileArgs,
     { isAuthenticated, isSuperAdmin, user }: GraphQLContext
-  ) => {
+  ): Promise<UserResponse> => {
     try {
       if (!isAuthenticated || !isSuperAdmin) {
         throw createError.authentication('Not authenticated');
@@ -190,9 +206,15 @@ export const superAdminMutations = {
         success: true,
         message: 'Profile updated successfully',
         user: {
-          id: updatedUser._id,
+          userId: updatedUser.userId,
           email: updatedUser.email,
-          fullName: updatedUser.fullName,
+          username: updatedUser.username,
+          firstName: updatedUser.firstName,
+          lastName: updatedUser.lastName,
+          role: updatedUser.role,
+          status: updatedUser.status,
+          createdAt: updatedUser.createdAt,
+          updatedAt: updatedUser.updatedAt
         },
       };
     } catch (error) {
@@ -205,9 +227,9 @@ export const superAdminMutations = {
 
   updateSuperAdminPassword: async (
     _: unknown,
-    { input }: { input: UpdatePasswordInput },
+    { input }: UpdatePasswordArgs,
     { isAuthenticated, isSuperAdmin, user }: GraphQLContext
-  ) => {
+  ): Promise<BaseResponse> => {
     try {
       if (!isAuthenticated || !isSuperAdmin) {
         throw createError.authentication('Not authenticated');
@@ -243,9 +265,9 @@ export const superAdminMutations = {
 
   updateSuperAdminSettings: async (
     _: unknown,
-    { input }: { input: UpdateSuperAdminSettingsInput },
+    { input }: UpdateSuperAdminSettingsArgs,
     { isAuthenticated, isSuperAdmin, user }: GraphQLContext
-  ) => {
+  ): Promise<SuperAdminSettingsResponse> => {
     try {
       if (!isAuthenticated || !isSuperAdmin) {
         throw createError.authentication('Not authenticated');
@@ -261,10 +283,16 @@ export const superAdminMutations = {
         throw createError.notFound('User not found');
       }
 
+      if (!updatedUser.settings) {
+        throw createError.notFound('Settings not found');
+      }
+
+      const { twoFactorCode, ...settings } = updatedUser.settings;
+
       return {
         success: true,
         message: 'Settings updated successfully',
-        settings: updatedUser.settings,
+        settings,
       };
     } catch (error) {
       if (error instanceof BaseError) {
@@ -287,8 +315,12 @@ export const superAdminMutations = {
         throw createError.authorization('Only super admin can create institutes');
       }
 
+      // handle the university name to make it slug
+      const slug = input.name.toLowerCase().replace(/ /g, '-');
+
       const institute = new Institute({
         ...input,
+        slug,
       });
       await institute.save();
 

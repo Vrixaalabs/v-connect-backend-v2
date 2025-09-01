@@ -1,6 +1,5 @@
 import { Schema, model, Document } from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
-
 export interface IInstitute extends Document {
   instituteId: string;
   name: string;
@@ -129,9 +128,10 @@ const InstituteSchema = new Schema<IInstitute>({
   },
 });
 
-// Pre-save middleware to update the updatedAt timestamp
+// Pre-save middleware to update timestamps and counts
 InstituteSchema.pre('save', function(next) {
   this.updatedAt = new Date();
+  
   next();
 });
 
