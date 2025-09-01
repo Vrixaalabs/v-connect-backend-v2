@@ -1,46 +1,53 @@
 import { makeExecutableSchema } from '@graphql-tools/schema';
 import { gql } from 'apollo-server-express';
-import { addressMutations } from './address/address.mutations';
-import { addressQueries } from './address/address.queries';
-import { addressTypes } from './address/address.types';
-import { globalTypes } from './global/global.types';
-import { inviteMutations } from './invites/invite.mutations';
-import { inviteQueries } from './invites/invite.queries';
-import { inviteTypes } from './invites/invite.types';
-import { userMutations } from './user/user.mutations';
-import { userQueries } from './user/user.queries';
+
+// Import types
+import { sharedTypes } from './shared/shared.types';
+import { instituteTypes } from './institute/institute.types';
+import { superAdminTypes } from './super-admin/super-admin.types';
+import { adminTypes } from './admin/admin.types';
+
+// Import resolvers
+import { instituteQueries } from './institute/institute.queries';
+import { instituteMutations } from './institute/institute.mutations';
+import { superAdminQueries } from './super-admin/super-admin.queries';
+import { superAdminMutations } from './super-admin/super-admin.mutations';
+import { adminQueries } from './admin/admin.queries';
+import { adminMutations } from './admin/admin.mutations';
 import { userTypes } from './user/user.types';
 
-const baseTypeDefs = gql`
+const typeDefs = gql`
   type Query {
-    _: Boolean
+    _empty: String
   }
 
   type Mutation {
-    _: Boolean
+    _empty: String
   }
 `;
 
 const resolvers = {
   Query: {
-    ...inviteQueries,
-    ...userQueries,
-    ...addressQueries,
+    ...instituteQueries,
+    ...superAdminQueries,
+    ...adminQueries,
   },
   Mutation: {
-    ...inviteMutations,
-    ...userMutations,
-    ...addressMutations,
+    ...instituteMutations,
+    ...superAdminMutations,
+    ...adminMutations,
   },
 };
 
 export const schema = makeExecutableSchema({
   typeDefs: [
-    baseTypeDefs,
+    typeDefs,
+    sharedTypes,
+    instituteTypes,
+    superAdminTypes,
+    adminTypes,
     userTypes,
-    inviteTypes,
-    addressTypes,
-    globalTypes,
   ],
   resolvers,
+
 });

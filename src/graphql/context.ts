@@ -12,6 +12,7 @@ interface AuthenticatedUser {
 export interface GraphQLContext {
   user: AuthenticatedUser | null;
   isAuthenticated: boolean;
+  isSuperAdmin: boolean;
   req: Request;
 }
 
@@ -26,6 +27,7 @@ export async function context({
     return {
       user: null,
       isAuthenticated: false,
+      isSuperAdmin: false,
       req,
     };
   }
@@ -37,25 +39,29 @@ export async function context({
       config.jwt.accessSecret as jwt.Secret
     ) as {
       userId: string;
-      type: string;
+      role: string;
     };
+    console.log("decoded token from context");
+    console.log(decoded);
 
-    if (decoded.type !== 'access') {
-      return {
-        user: null,
-        isAuthenticated: false,
-        req,
-      };
-    }
+    // if (decoded.type !== 'access') {
+    //       return {
+    //   user: null,
+    //   isAuthenticated: false,
+    //   isSuperAdmin: false,
+    //   req,
+    // };
+    // }
 
     const user = await User.findOne({ userId: decoded.userId });
 
     if (!user) {
-      return {
-        user: null,
-        isAuthenticated: false,
-        req,
-      };
+          return {
+      user: null,
+      isAuthenticated: false,
+      isSuperAdmin: false,
+      req,
+    };
     }
 
     return {
@@ -65,12 +71,14 @@ export async function context({
         email: user.email,
       },
       isAuthenticated: true,
+      isSuperAdmin: user.role === 'super_admin',
       req,
     };
   } catch (error) {
     return {
       user: null,
       isAuthenticated: false,
+      isSuperAdmin: false,
       req,
     };
   }
