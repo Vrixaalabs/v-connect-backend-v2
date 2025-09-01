@@ -10,6 +10,17 @@ import {
   CreateInstituteRoleInput,
   UpdateInstituteRoleInput,
   CreateJoinRequestInput,
+  FollowInstituteArgs,
+  UnfollowInstituteArgs,
+  CreateInstituteRoleArgs,
+  UpdateInstituteRoleArgs,
+  DeleteInstituteRoleArgs,
+  AssignInstituteRoleArgs,
+  RemoveInstituteRoleArgs,
+  CreateJoinRequestArgs,
+  InstituteResponse,
+  InstituteRoleResponse,
+  JoinRequestResponse
 } from './institute.interfaces';
 import { BaseError } from '../../types/errors/base.error';
 
@@ -18,9 +29,9 @@ import { User } from '../../models/User';
 export const instituteMutations = {
   followInstitute: async (
     _: unknown,
-    { instituteId }: { instituteId: string },
+    { instituteId }: FollowInstituteArgs,
     { isAuthenticated, isSuperAdmin, user }: GraphQLContext
-  ) => {
+  ): Promise<InstituteResponse> => {
     try {
       if (!isAuthenticated) {
         throw createError.authentication('Not authenticated');
@@ -59,9 +70,9 @@ export const instituteMutations = {
 
   unfollowInstitute: async (
     _: unknown,
-    { instituteId }: { instituteId: string },
+    { instituteId }: UnfollowInstituteArgs,
     { isAuthenticated, isSuperAdmin, user }: GraphQLContext
-  ) => {
+  ): Promise<InstituteResponse> => {
     try {
       if (!isAuthenticated) {
         throw createError.authentication('Not authenticated');
@@ -100,9 +111,9 @@ export const instituteMutations = {
 
   createInstituteRole: async (
     _: unknown,
-    { instituteId, input }: { instituteId: string; input: CreateInstituteRoleInput },
+    { instituteId, input }: CreateInstituteRoleArgs,
     { isAuthenticated, isSuperAdmin, user }: GraphQLContext
-  ) => {
+  ): Promise<InstituteRoleResponse> => {
     try {
       if (!isAuthenticated) {
         throw createError.authentication('Not authenticated');
@@ -134,9 +145,9 @@ export const instituteMutations = {
 
   updateInstituteRole: async (
     _: unknown,
-    { roleId, input }: { roleId: string; input: UpdateInstituteRoleInput },
+    { roleId, input }: UpdateInstituteRoleArgs,
     { isAuthenticated, isSuperAdmin }: GraphQLContext
-  ) => {
+  ): Promise<InstituteRoleResponse> => {
     try {
       if (!isAuthenticated) {
         throw createError.authentication('Not authenticated');
@@ -175,9 +186,9 @@ export const instituteMutations = {
 
   deleteInstituteRole: async (
     _: unknown,
-    { roleId }: { roleId: string },
+    { roleId }: DeleteInstituteRoleArgs,
     { isAuthenticated, isSuperAdmin }: GraphQLContext
-  ) => {
+  ): Promise<InstituteRoleResponse> => {
     try {
       if (!isAuthenticated) {
         throw createError.authentication('Not authenticated');
@@ -220,9 +231,9 @@ export const instituteMutations = {
 
   assignInstituteRole: async (
     _: unknown,
-    { instituteId, userId, roleId, departmentId }: { instituteId: string; userId: string; roleId: string; departmentId?: string },
+    { instituteId, userId, roleId, departmentId }: AssignInstituteRoleArgs,
     { isAuthenticated, isSuperAdmin, user }: GraphQLContext
-  ) => {
+  ): Promise<InstituteRoleResponse> => {
     try {
       if (!isAuthenticated) {
         throw createError.authentication('Not authenticated');
@@ -245,6 +256,12 @@ export const instituteMutations = {
       });
 
       const role = await InstituteRole.findOne({ roleId });
+      if (!role) {
+        throw createError.notFound(`Role with ID ${roleId} not found`, {
+          entityType: 'InstituteRole',
+          entityId: roleId,
+        });
+      }
 
       return {
         success: true,
@@ -267,9 +284,9 @@ export const instituteMutations = {
 
   removeInstituteRole: async (
     _: unknown,
-    { instituteId, userId }: { instituteId: string; userId: string },
+    { instituteId, userId }: RemoveInstituteRoleArgs,
     { isAuthenticated, isSuperAdmin }: GraphQLContext
-  ) => {
+  ): Promise<InstituteRoleResponse> => {
     try {
       if (!isAuthenticated) {
         throw createError.authentication('Not authenticated');
@@ -299,9 +316,9 @@ export const instituteMutations = {
 
   createJoinRequest: async (
     _: unknown,
-    { input }: { input: CreateJoinRequestInput },
+    { input }: CreateJoinRequestArgs,
     { isAuthenticated, isSuperAdmin, user }: GraphQLContext
-  ) => {
+  ): Promise<JoinRequestResponse> => {
     try {
       if (!isAuthenticated) {
         throw createError.authentication('Not authenticated');

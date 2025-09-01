@@ -31,7 +31,7 @@ export const instituteTypes = gql`
     email: String!
     phone: String!
     address: InstituteAddress!
-    departments: [Department!]!
+    departments: [Department!]
     followers: [String!]!
     studentsCount: Int!
     followersCount: Int!
@@ -88,8 +88,8 @@ export const instituteTypes = gql`
     website: String
     email: String!
     phone: String!
-    address: InstituteAddressInput!
-    departments: [DepartmentInput!]!
+    address: InstituteAddressInput
+    departments: [DepartmentInput!]
   }
 
   input UpdateInstituteInput {

@@ -4,15 +4,26 @@ import { Institute } from '../../models/Institute';
 import { InstituteRole } from '../../models/InstituteRole';
 import { InstituteJoinRequest } from '../../models/InstituteJoinRequest';
 import { InstituteUserRole } from '../../models/InstituteUserRole';
-import { InstituteFilterInput } from './institute.interfaces';
+import { 
+  InstituteFilterInput,
+  SearchInstitutesArgs,
+  GetInstituteBySlugArgs,
+  GetInstituteByIdArgs,
+  GetInstituteRolesArgs,
+  GetInstituteRoleArgs,
+  InstitutesResponse,
+  InstituteResponse,
+  InstituteRolesResponse,
+  InstituteRoleResponse
+} from './institute.interfaces';
 import { BaseError } from '../../types/errors/base.error';
 
 export const instituteQueries = {
   searchInstitutes: async (
     _: unknown,
-    { filter, page = 1, limit = 10 }: { filter?: InstituteFilterInput; page: number; limit: number },
+    { filter, page = 1, limit = 10 }: SearchInstitutesArgs,
     { isAuthenticated }: GraphQLContext
-  ) => {
+  ): Promise<InstitutesResponse> => {
     try {
       if (!isAuthenticated) {
         throw createError.authentication('Not authenticated');
@@ -65,9 +76,9 @@ export const instituteQueries = {
 
   getInstituteBySlug: async (
     _: unknown,
-    { slug }: { slug: string },
+    { slug }: GetInstituteBySlugArgs,
     { isAuthenticated }: GraphQLContext
-  ) => {
+  ): Promise<InstituteResponse> => {
     try {
       if (!isAuthenticated) {
         throw createError.authentication('Not authenticated');
@@ -101,9 +112,9 @@ export const instituteQueries = {
 
   getInstituteById: async (
     _: unknown,
-    { instituteId }: { instituteId: string },
+    { instituteId }: GetInstituteByIdArgs,
     { isAuthenticated }: GraphQLContext
-  ) => {
+  ): Promise<InstituteResponse> => {
     try {
       if (!isAuthenticated) {
         throw createError.authentication('Not authenticated');
@@ -137,9 +148,9 @@ export const instituteQueries = {
 
   getInstituteRoles: async (
     _: unknown,
-    { instituteId }: { instituteId: string },
+    { instituteId }: GetInstituteRolesArgs,
     { isAuthenticated }: GraphQLContext
-  ) => {
+  ): Promise<InstituteRolesResponse> => {
     try {
       if (!isAuthenticated) {
         throw createError.authentication('Not authenticated');
@@ -167,9 +178,9 @@ export const instituteQueries = {
 
   getInstituteRole: async (
     _: unknown,
-    { roleId }: { roleId: string },
+    { roleId }: GetInstituteRoleArgs,
     { isAuthenticated }: GraphQLContext
-  ) => {
+  ): Promise<InstituteRoleResponse> => {
     try {
       if (!isAuthenticated) {
         throw createError.authentication('Not authenticated');

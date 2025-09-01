@@ -12,6 +12,10 @@ import {
   GetInstituteAdminsArgs,
   InstituteAdminsResponse,
   InstituteAdminResponse,
+  DashboardStatsResponse,
+  RecentActivitiesResponse,
+  SystemStatusResponse,
+  SuperAdminSettingsResponse,
 } from './super-admin.interfaces';
 
 export const superAdminQueries = {
@@ -19,7 +23,7 @@ export const superAdminQueries = {
     _: unknown,
     __: unknown,
     { isAuthenticated, isSuperAdmin }: GraphQLContext
-  ) => {
+  ): Promise<DashboardStatsResponse> => {
     try {
       if (!isAuthenticated || !isSuperAdmin) {
         throw createError.authorization('Not authorized to access super admin dashboard');
@@ -45,10 +49,14 @@ export const superAdminQueries = {
       ]);
 
       return {
-        totalInstitutes,
-        totalStudents,
-        totalDepartments,
-        activeAdmins,
+        success: true,
+        message: 'Dashboard stats fetched successfully',
+        stats: {
+          totalInstitutes,
+          totalStudents,
+          totalDepartments,
+          activeAdmins,
+        }
       };
     } catch (error) {
       if (error instanceof BaseError) {
@@ -65,7 +73,7 @@ export const superAdminQueries = {
     _: unknown,
     { limit = 10 }: GetRecentActivitiesArgs,
     { isAuthenticated, isSuperAdmin }: GraphQLContext
-  ) => {
+  ): Promise<RecentActivitiesResponse> => {
     try {
       if (!isAuthenticated || !isSuperAdmin) {
         throw createError.authorization('Not authorized to access super admin activities');
@@ -101,7 +109,11 @@ export const superAdminQueries = {
         .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
         .slice(0, limit);
 
-      return allActivities;
+      return {
+        success: true,
+        message: 'Recent activities fetched successfully',
+        activities: allActivities
+      };
     } catch (error) {
       if (error instanceof BaseError) {
         throw error;
@@ -117,7 +129,7 @@ export const superAdminQueries = {
     _: unknown,
     __: unknown,
     { isAuthenticated, isSuperAdmin }: GraphQLContext
-  ) => {
+  ): Promise<SystemStatusResponse> => {
     try {
       if (!isAuthenticated || !isSuperAdmin) {
         throw createError.authorization('Not authorized to access system status');
@@ -126,9 +138,13 @@ export const superAdminQueries = {
       // In a real implementation, you would get this from your monitoring system
       // For now, we'll return mock data
       return {
-        status: 'operational',
-        load: 0.25, // 25% system load
-        lastUpdated: new Date().toISOString(),
+        success: true,
+        message: 'System status fetched successfully',
+        status: {
+          status: 'operational',
+          load: 0.25, // 25% system load
+          lastUpdated: new Date().toISOString(),
+        }
       };
     } catch (error) {
       if (error instanceof BaseError) {
@@ -145,7 +161,7 @@ export const superAdminQueries = {
     _: unknown,
     { page = 1, limit = 10, search }: GetInstituteAdminsArgs,
     { isAuthenticated, isSuperAdmin }: GraphQLContext
-  ) => {
+  ): Promise<InstituteAdminsResponse> => {
     try {
       if (!isAuthenticated) {
         throw createError.authentication('Not authenticated');
@@ -191,7 +207,7 @@ export const superAdminQueries = {
     _: unknown,
     __: unknown,
     { isAuthenticated, isSuperAdmin, user }: GraphQLContext
-  ) => {
+  ): Promise<SuperAdminSettingsResponse> => {
     try {
       if (!isAuthenticated) {
         throw createError.authentication('Not authenticated');
@@ -208,7 +224,17 @@ export const superAdminQueries = {
         throw createError.notFound('Settings not found');
       }
 
-      return settings;
+      if (!settings.settings) {
+        throw createError.notFound('Settings not found');
+      }
+
+      const { twoFactorCode, ...userSettings } = settings.settings;
+
+      return {
+        success: true,
+        message: 'Settings fetched successfully',
+        settings: userSettings
+      };
     } catch (error) {
       if (error instanceof BaseError) {
         throw error;
@@ -224,7 +250,7 @@ export const superAdminQueries = {
     _: unknown,
     { adminId }: { adminId: string },
     { isAuthenticated, isSuperAdmin }: GraphQLContext
-  ) => {
+  ): Promise<InstituteAdminResponse>=> {
     try {
       if (!isAuthenticated) {
         throw createError.authentication('Not authenticated');
