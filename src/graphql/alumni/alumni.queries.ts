@@ -2,6 +2,7 @@ import { GraphQLContext } from '../context';
 import { createError } from '../../middleware/errorHandler';
 import { User } from '../../models/User';
 import { AMASession } from '../../models/AMASession';
+import { Event } from '../../models/Events'; // <-- import Event model
 import { BaseError } from '../../types/errors/base.error';
 
 export const alumniQueries = {
@@ -139,6 +140,57 @@ export const alumniQueries = {
       if (error instanceof BaseError) throw error;
       throw createError.database('Failed to fetch AMA session', {
         operation: 'amaSession',
+        id,
+        error,
+      });
+    }
+  },
+
+  // === Event Queries ===
+
+  // Get all events
+  events: async (
+    _: unknown,
+    __: unknown,
+    { isAuthenticated }: GraphQLContext
+  ) => {
+    try {
+      if (!isAuthenticated) {
+        throw createError.authentication('Not authenticated');
+      }
+
+      const events = await Event.find().sort({ startDate: 1 }); // upcoming first
+      return events;
+    } catch (error) {
+      if (error instanceof BaseError) throw error;
+      throw createError.database('Failed to fetch events', {
+        operation: 'events',
+        error,
+      });
+    }
+  },
+
+  // Get a single event
+  event: async (
+    _: unknown,
+    { id }: { id: string },
+    { isAuthenticated }: GraphQLContext
+  ) => {
+    try {
+      if (!isAuthenticated) {
+        throw createError.authentication('Not authenticated');
+      }
+
+      const event = await Event.findById(id);
+      if (!event) {
+        throw createError.notFound(`Event with ID ${id} not found`);
+      }
+
+      return event;
+    } catch (error) {
+      if (error instanceof BaseError) throw error;
+      throw createError.database('Failed to fetch event', {
+        operation: 'event',
         id,
         error,
       });
