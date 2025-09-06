@@ -65,64 +65,19 @@ export const alumniTypes = gql`
     updatedAt: String!
   }
 
-  # === Event ===
-  type Location {
-    name: String
-    address: String
-    city: String
-    country: String
-    coordinates: Coordinates
-  }
 
-  type Coordinates {
-    lat: Float
-    lng: Float
-  }
+  # === Job/Internship === 
 
-  type Event {
+  type JobAndInternship{
     _id: ID!
     title: String!
+    organization: String!
     description: String
-    startDate: String!
-    endDate: String
-    location: Location
-    isVirtual: Boolean!
-    link: String
+    role: String!
+    link: String!
+    active: Boolean!
     createdAt: String!
     updatedAt: String!
-  }
-
-  input LocationInput {
-    name: String
-    address: String
-    city: String
-    country: String
-    coordinates: CoordinatesInput
-  }
-
-  input CoordinatesInput {
-    lat: Float
-    lng: Float
-  }
-
-  input CreateEventInput {
-    title: String!
-    description: String
-    startDate: String!
-    endDate: String
-    location: LocationInput
-    isVirtual: Boolean!
-    link: String
-  }
-
-  input UpdateEventInput {
-    title: String
-    description: String
-    startDate: String
-    endDate: String
-    location: LocationInput
-    isVirtual: Boolean
-    link: String
   }
 
   extend type Query {
@@ -133,14 +88,15 @@ export const alumniTypes = gql`
 
     # AMA
     amaSessions(active: Boolean): [AMASession!]
-    amaSession(id: ID!): AMASession
-
-    # Events
-    events: [Event!]
-    event(id: ID!): Event
+    amaSession(id: ID!): amaSession
 
     # Mock
     getMockAuthToken(userId: String!): MockTokenResponse
+
+    # Job/Internship
+    getJobInternship(active: Boolean!): [JobAndInternship!]
+    
+    getSingleJobInternship(_id: ID!): JobAndInternship!
   }
 
   extend type Mutation {
@@ -160,9 +116,10 @@ export const alumniTypes = gql`
 
     endAMASession(id: ID!): AMASession!
 
-    # Events
-    createEvent(input: CreateEventInput!): Event!
-    updateEvent(id: ID!, input: UpdateEventInput!): Event!
-    deleteEvent(id: ID!): Boolean!
+    # JobAndInternship
+
+    createJobInternship(title: String!, description: String, organization: String!, role: String!, link: String!): JobAndInternship!
+
+    endJobInternship(_id: ID!): JobAndInternship!
   }
 `;

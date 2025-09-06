@@ -2,7 +2,7 @@ import { GraphQLContext } from '../context';
 import { createError } from '../../middleware/errorHandler';
 import { User } from '../../models/User';
 import { AMASession } from '../../models/AMASession';
-import { Event } from '../../models/Events'; // <-- import Event model
+import { JobInternship } from '../../models/JobInternship'
 import { BaseError } from '../../types/errors/base.error';
 
 export const alumniQueries = {
@@ -146,54 +146,60 @@ export const alumniQueries = {
     }
   },
 
-  // === Event Queries ===
+  // Get Job and Internship listings
 
-  // Get all events
-  events: async (
-    _: unknown,
-    __: unknown,
-    { isAuthenticated }: GraphQLContext
-  ) => {
-    try {
-      if (!isAuthenticated) {
-        throw createError.authentication('Not authenticated');
-      }
-
-      const events = await Event.find().sort({ startDate: 1 }); // upcoming first
-      return events;
-    } catch (error) {
-      if (error instanceof BaseError) throw error;
-      throw createError.database('Failed to fetch events', {
-        operation: 'events',
-        error,
-      });
+  getJobInternship: async (
+  _: unknown,
+  { active }: { active?: boolean },
+  { isAuthenticated }: GraphQLContext
+) => {
+  try {
+    if (!isAuthenticated) {
+      throw createError.authentication('Not authenticated');
     }
-  },
 
-  // Get a single event
-  event: async (
-    _: unknown,
-    { id }: { id: string },
-    { isAuthenticated }: GraphQLContext
-  ) => {
-    try {
-      if (!isAuthenticated) {
-        throw createError.authentication('Not authenticated');
-      }
-
-      const event = await Event.findById(id);
-      if (!event) {
-        throw createError.notFound(`Event with ID ${id} not found`);
-      }
-
-      return event;
-    } catch (error) {
-      if (error instanceof BaseError) throw error;
-      throw createError.database('Failed to fetch event', {
-        operation: 'event',
-        id,
-        error,
-      });
+    const filter: Record<string, unknown> = {};
+    if (active !== undefined) {
+      filter.active = active;
     }
-  },
+
+    const jobs = await JobInternship.find(filter).sort({ createdAt: -1 });
+    return jobs;
+  } catch (error) {
+    if (error instanceof BaseError) throw error;
+    throw createError.database('Failed to fetch job/internship listings', {
+      operation: 'getJobInternship',
+      active,
+      error,
+    });
+  }
+},
+
+
+// Get a single Job/Internship by ID
+getSingleJobInternship: async (
+  _: unknown,
+  { id }: { id: string },
+  { isAuthenticated }: GraphQLContext
+) => {
+  try {
+    if (!isAuthenticated) {
+      throw createError.authentication('Not authenticated');
+    }
+
+    const job = await JobInternship.findById(id);
+    if (!job) {
+      throw createError.notFound(`Job/Internship with ID ${id} not found`);
+    }
+
+    return job;
+  } catch (error) {
+    if (error instanceof BaseError) throw error;
+    throw createError.database('Failed to fetch Job/Internship', {
+      operation: 'jobInternship',
+      id,
+      error,
+    });
+  }
+},
 };

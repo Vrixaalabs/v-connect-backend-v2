@@ -1,7 +1,7 @@
 import { GraphQLContext } from '../context';
 import { createError } from '../../middleware/errorHandler';
 import { AMASession } from '../../models/AMASession';
-import { Event } from '../../models/Events'; // <-- import Event model
+import { JobInternship } from '../../models/JobInternship';
 import { BaseError } from '../../types/errors/base.error';
 
 export const alumniMutations = {
@@ -75,41 +75,51 @@ export const alumniMutations = {
     }
   },
 
-  // === Event Mutations ===
+  // === Job/Internship Mutations ===
 
-  // Create a new Event
-  createEvent: async (
+  // Create a new Job or Internship
+  createJobInternship: async (
     _: unknown,
-    { input }: { input: any },
-    { isAuthenticated }: GraphQLContext
+    {
+      title,
+      description,
+      organization,
+      role,
+      link,
+    }: { title: string; description?: string; organization: string; role: string; link: string },
+    { isAuthenticated, userId }: GraphQLContext
   ) => {
     try {
-      if (!isAuthenticated) {
+      if (!isAuthenticated || !userId) {
         throw createError.authentication('Not authenticated');
       }
 
-      const event = new Event({
-        ...input,
-        startDate: new Date(input.startDate),
-        endDate: input.endDate ? new Date(input.endDate) : undefined,
+      const job = new JobInternship({
+        title,
+        description,
+        organization,
+        role,
+        link,
+        active: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
       });
 
-      await event.save();
-      return event;
+      await job.save();
+      return job;
     } catch (error) {
       if (error instanceof BaseError) throw error;
-      throw createError.database('Failed to create event', {
-        operation: 'createEvent',
-        input,
+      throw createError.database('Failed to create job/internship', {
+        operation: 'createJobInternship',
         error,
       });
     }
   },
 
-  // Update an existing Event
-  updateEvent: async (
+  // End (deactivate) a Job or Internship
+  endJobInternship: async (
     _: unknown,
-    { id, input }: { id: string; input: any },
+    { _id }: { _id: string },
     { isAuthenticated }: GraphQLContext
   ) => {
     try {
@@ -117,53 +127,21 @@ export const alumniMutations = {
         throw createError.authentication('Not authenticated');
       }
 
-      const updates: any = { ...input };
-      if (input.startDate) updates.startDate = new Date(input.startDate);
-      if (input.endDate) updates.endDate = new Date(input.endDate);
-
-      const event = await Event.findByIdAndUpdate(id, updates, {
-        new: true,
-        runValidators: true,
-      });
-
-      if (!event) {
-        throw createError.notFound(`Event with ID ${id} not found`);
+      const job = await JobInternship.findById(_id);
+      if (!job) {
+        throw createError.notFound(`Job/Internship with ID ${_id} not found`);
       }
 
-      return event;
+      job.active = false;
+      job.updatedAt = new Date();
+      await job.save();
+
+      return job;
     } catch (error) {
       if (error instanceof BaseError) throw error;
-      throw createError.database('Failed to update event', {
-        operation: 'updateEvent',
-        id,
-        input,
-        error,
-      });
-    }
-  },
-
-  // Delete an Event
-  deleteEvent: async (
-    _: unknown,
-    { id }: { id: string },
-    { isAuthenticated }: GraphQLContext
-  ) => {
-    try {
-      if (!isAuthenticated) {
-        throw createError.authentication('Not authenticated');
-      }
-
-      const event = await Event.findByIdAndDelete(id);
-      if (!event) {
-        throw createError.notFound(`Event with ID ${id} not found`);
-      }
-
-      return true;
-    } catch (error) {
-      if (error instanceof BaseError) throw error;
-      throw createError.database('Failed to delete event', {
-        operation: 'deleteEvent',
-        id,
+      throw createError.database('Failed to end job/internship', {
+        operation: 'endJobInternship',
+        _id,
         error,
       });
     }
