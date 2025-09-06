@@ -1,9 +1,9 @@
 import { Schema, model } from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
 
-export interface IInstituteJoinRequest {
+export interface OrganizationJoinRequest {
   requestId: string;
-  instituteId: string;
+  organizationId: string;
   userId: string;
   fullName: string;
   email: string;
@@ -17,21 +17,23 @@ export interface IInstituteJoinRequest {
   updatedAt: Date;
 }
 
-const InstituteJoinRequestSchema = new Schema<IInstituteJoinRequest>({
+const OrganizationJoinRequestSchema = new Schema<OrganizationJoinRequest>({
   requestId: {
     type: String,
     default: () => uuidv4(),
     unique: true,
   },
-  instituteId: {
+  organizationId: {
     type: String,
     required: true,
-    ref: 'Institute',
+    ref: 'Organization',
+    refPath: 'organizationId',
   },
   userId: {
     type: String,
     required: true,
     ref: 'User',
+    refPath: 'userId',
   },
   fullName: {
     type: String,
@@ -61,6 +63,7 @@ const InstituteJoinRequestSchema = new Schema<IInstituteJoinRequest>({
   approvedBy: {
     type: String,
     ref: 'User',
+    refPath: 'userId',
   },
   rejectionReason: String,
   createdAt: {
@@ -74,9 +77,9 @@ const InstituteJoinRequestSchema = new Schema<IInstituteJoinRequest>({
 });
 
 // Pre-save middleware to update the updatedAt timestamp
-InstituteJoinRequestSchema.pre('save', function(next) {
+OrganizationJoinRequestSchema.pre('save', function(next) {
   this.updatedAt = new Date();
   next();
 });
 
-export const InstituteJoinRequest = model<IInstituteJoinRequest>('InstituteJoinRequest', InstituteJoinRequestSchema);
+export const OrganizationJoinRequest = model<OrganizationJoinRequest>('OrganizationJoinRequest', OrganizationJoinRequestSchema);

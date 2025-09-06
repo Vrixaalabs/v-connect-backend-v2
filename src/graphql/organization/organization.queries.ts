@@ -1,29 +1,30 @@
 import { GraphQLContext } from '../context';
 import { createError } from '../../middleware/errorHandler';
 import { Institute } from '../../models/Institute';
-import { InstituteRole } from '../../models/InstituteRole';
-import { InstituteJoinRequest } from '../../models/InstituteJoinRequest';
-import { InstituteUserRole } from '../../models/InstituteUserRole';
+import { OrganizationRole } from '../../models/OrganizationRole';
+import { OrganizationJoinRequest } from '../../models/OrganizationJoinRequest';
+import { OrganizationUserRole } from '../../models/OrganizationUserRole';
 import { 
-  InstituteFilterInput,
-  SearchInstitutesArgs,
-  GetInstituteBySlugArgs,
-  GetInstituteByIdArgs,
-  GetInstituteRolesArgs,
-  GetInstituteRoleArgs,
-  InstitutesResponse,
-  InstituteResponse,
-  InstituteRolesResponse,
-  InstituteRoleResponse
-} from './institute.interfaces';
+  OrganizationFilterInput,
+  SearchOrganizationsArgs,
+  GetOrganizationBySlugArgs,
+  GetOrganizationByIdArgs,
+  GetOrganizationRolesArgs,
+  GetOrganizationRoleArgs,
+  OrganizationsResponse,
+  OrganizationResponse,
+  OrganizationRolesResponse,
+  OrganizationRoleResponse,
+} from './organization.interfaces';
 import { BaseError } from '../../types/errors/base.error';
+import { Organization } from '@/models/Organization';
 
-export const instituteQueries = {
-  searchInstitutes: async (
+export const organizationQueries = {
+  searchOrganizations: async (
     _: unknown,
-    { filter, page = 1, limit = 10 }: SearchInstitutesArgs,
+    { filter, page = 1, limit = 10 }: SearchOrganizationsArgs,
     { isAuthenticated }: GraphQLContext
-  ): Promise<InstitutesResponse> => {
+  ): Promise<OrganizationsResponse> => {
     try {
       if (!isAuthenticated) {
         throw createError.authentication('Not authenticated');
@@ -48,16 +49,16 @@ export const instituteQueries = {
         }
       }
 
-      const total = await Institute.countDocuments(query);
-      const institutes = await Institute.find(query)
+      const total = await Organization.countDocuments(query);
+      const organizations = await Organization.find(query)
         .skip((page - 1) * limit)
         .limit(limit)
         .sort({ createdAt: -1 });
 
       return {
         success: true,
-        message: 'Institutes fetched successfully',
-        institutes,
+        message: 'Organizations fetched successfully',
+        organizations,
         total,
         page,
         limit,
@@ -66,146 +67,146 @@ export const instituteQueries = {
       if (error instanceof BaseError) {
         throw error;
       }
-      throw createError.database('Failed to fetch institutes', {
+      throw createError.database('Failed to fetch organizations', {
         operation: 'search',
-        entityType: 'Institute',
+        entityType: 'Organization',
         error,
       });
     }
   },
 
-  getInstituteBySlug: async (
+  getOrganizationBySlug: async (
     _: unknown,
-    { slug }: GetInstituteBySlugArgs,
+    { slug }: GetOrganizationBySlugArgs,
     { isAuthenticated }: GraphQLContext
-  ): Promise<InstituteResponse> => {
+  ): Promise<OrganizationResponse> => {
     try {
       if (!isAuthenticated) {
         throw createError.authentication('Not authenticated');
       }
 
-      const institute = await Institute.findOne({ slug });
-      if (!institute) {
-        throw createError.notFound(`Institute with slug ${slug} not found`, {
-          entityType: 'Institute',
+      const organization = await Organization.findOne({ slug });
+      if (!organization) {
+        throw createError.notFound(`Organization with slug ${slug} not found`, {
+          entityType: 'Organization',
           slug,
         });
       }
 
       return {
         success: true,
-        message: 'Institute fetched successfully',
-        institute,
+        message: 'Organization fetched successfully',
+        organization,
       };
     } catch (error) {
       if (error instanceof BaseError) {
         throw error;
       }
-      throw createError.database('Failed to fetch institute', {
+      throw createError.database('Failed to fetch organization', {
         operation: 'getBySlug',
-        entityType: 'Institute',
+        entityType: 'Organization',
         slug,
         error,
       });
     }
   },
 
-  getInstituteById: async (
+  getOrganizationById: async (
     _: unknown,
-    { instituteId }: GetInstituteByIdArgs,
+    { organizationId }: GetOrganizationByIdArgs,
     { isAuthenticated }: GraphQLContext
-  ): Promise<InstituteResponse> => {
+  ): Promise<OrganizationResponse> => {
     try {
       if (!isAuthenticated) {
         throw createError.authentication('Not authenticated');
       }
 
-      const institute = await Institute.findOne({ instituteId });
-      if (!institute) {
-        throw createError.notFound(`Institute with ID ${instituteId} not found`, {
-          entityType: 'Institute',
-          entityId: instituteId,
+      const organization = await Organization.findOne({ organizationId });
+      if (!organization) {
+        throw createError.notFound(`Organization with ID ${organizationId} not found`, {
+          entityType: 'Organization',
+          entityId: organizationId,
         });
       }
 
       return {
         success: true,
-        message: 'Institute fetched successfully',
-        institute,
+        message: 'Organization fetched successfully',
+        organization,
       };
     } catch (error) {
       if (error instanceof BaseError) {
         throw error;
       }
-      throw createError.database('Failed to fetch institute', {
+      throw createError.database('Failed to fetch organization', {
         operation: 'getById',
-        entityType: 'Institute',
-        entityId: instituteId,
+        entityType: 'Organization',
+        entityId: organizationId,
         error,
       });
     }
   },
 
-  getInstituteRoles: async (
+  getOrganizationRoles: async (
     _: unknown,
-    { instituteId }: GetInstituteRolesArgs,
+    { organizationId }: GetOrganizationRolesArgs,
     { isAuthenticated }: GraphQLContext
-  ): Promise<InstituteRolesResponse> => {
+  ): Promise<OrganizationRolesResponse> => {
     try {
       if (!isAuthenticated) {
         throw createError.authentication('Not authenticated');
       }
 
-      const roles = await InstituteRole.find({ instituteId });
+      const roles = await OrganizationRole.find({ organizationId });
 
       return {
         success: true,
-        message: 'Institute roles fetched successfully',
+        message: 'Organization roles fetched successfully',
         roles,
       };
     } catch (error) {
       if (error instanceof BaseError) {
         throw error;
       }
-      throw createError.database('Failed to fetch institute roles', {
+      throw createError.database('Failed to fetch organization roles', {
         operation: 'getRoles',
-        entityType: 'InstituteRole',
-        instituteId,
+        entityType: 'OrganizationRole',
+        organizationId,
         error,
       });
     }
   },
 
-  getInstituteRole: async (
+  getOrganizationRole: async (
     _: unknown,
-    { roleId }: GetInstituteRoleArgs,
+    { roleId }: GetOrganizationRoleArgs,
     { isAuthenticated }: GraphQLContext
-  ): Promise<InstituteRoleResponse> => {
+  ): Promise<OrganizationRoleResponse> => {
     try {
       if (!isAuthenticated) {
         throw createError.authentication('Not authenticated');
       }
 
-      const role = await InstituteRole.findOne({ roleId });
+      const role = await OrganizationRole.findOne({ roleId });
       if (!role) {
         throw createError.notFound(`Role with ID ${roleId} not found`, {
-          entityType: 'InstituteRole',
+          entityType: 'OrganizationRole',
           entityId: roleId,
         });
       }
 
       return {
         success: true,
-        message: 'Institute role fetched successfully',
+        message: 'Organization role fetched successfully',
         role,
       };
     } catch (error) {
       if (error instanceof BaseError) {
         throw error;
       }
-      throw createError.database('Failed to fetch institute role', {
+      throw createError.database('Failed to fetch organization role', {
         operation: 'getRole',
-        entityType: 'InstituteRole',
+        entityType: 'OrganizationRole',
         roleId,
         error,
       });

@@ -1,100 +1,100 @@
 import { GraphQLContext } from '../context';
 import { createError } from '../../middleware/errorHandler';
-import { Institute } from '../../models/Institute';
-import { InstituteRole } from '../../models/InstituteRole';
-import { InstituteUserRole } from '../../models/InstituteUserRole';
-import { InstituteJoinRequest } from '../../models/InstituteJoinRequest';
+import { Organization } from '../../models/Organization';
+import { OrganizationRole } from '../../models/OrganizationRole';
+import { OrganizationUserRole } from '../../models/OrganizationUserRole';
+import { OrganizationJoinRequest } from '../../models/OrganizationJoinRequest';
 import {
-  CreateInstituteInput,
-  UpdateInstituteInput,
-  CreateInstituteRoleInput,
-  UpdateInstituteRoleInput,
+  CreateOrganizationInput,
+  UpdateOrganizationInput,
+  CreateOrganizationRoleInput,
+  UpdateOrganizationRoleInput,
   CreateJoinRequestInput,
-  FollowInstituteArgs,
-  UnfollowInstituteArgs,
-  CreateInstituteRoleArgs,
-  UpdateInstituteRoleArgs,
-  DeleteInstituteRoleArgs,
-  AssignInstituteRoleArgs,
-  RemoveInstituteRoleArgs,
+  FollowOrganizationArgs,
+  UnfollowOrganizationArgs,
+  CreateOrganizationRoleArgs,
+  UpdateOrganizationRoleArgs,
+  DeleteOrganizationRoleArgs,
+  AssignOrganizationRoleArgs,
+  RemoveOrganizationRoleArgs,
   CreateJoinRequestArgs,
-  InstituteResponse,
-  InstituteRoleResponse,
+  OrganizationResponse,
+  OrganizationRoleResponse,
   JoinRequestResponse
-} from './institute.interfaces';
+} from './organization.interfaces';
 import { BaseError } from '../../types/errors/base.error';
 
 import { User } from '../../models/User';
 
-export const instituteMutations = {
-  followInstitute: async (
+export const organizationMutations = {
+  followOrganization: async (
     _: unknown,
-    { instituteId }: FollowInstituteArgs,
+    { organizationId }: FollowOrganizationArgs,
     { isAuthenticated, isSuperAdmin, user }: GraphQLContext
-  ): Promise<InstituteResponse> => {
+  ): Promise<OrganizationResponse> => {
     try {
       if (!isAuthenticated) {
         throw createError.authentication('Not authenticated');
       }
 
-      const institute = await Institute.findOneAndUpdate(
-        { instituteId },
+      const organization = await Organization.findOneAndUpdate(
+        { organizationId },
         { $addToSet: { followers: user?.id } },
         { new: true }
       );
 
-      if (!institute) {
-        throw createError.notFound(`Institute with ID ${instituteId} not found`, {
-          entityType: 'Institute',
-          entityId: instituteId,
+      if (!organization) {
+        throw createError.notFound(`Organization with ID ${organizationId} not found`, {
+          entityType: 'Organization',
+          entityId: organizationId,
         });
       }
 
       return {
         success: true,
-        message: 'Institute followed successfully',
-        institute,
+        message: 'Organization followed successfully',
+        organization,
       };
     } catch (error) {
       if (error instanceof BaseError) {
         throw error;
       }
-      throw createError.database('Failed to follow institute', {
+      throw createError.database('Failed to follow organization', {
         operation: 'follow',
-        entityType: 'Institute',
-        entityId: instituteId,
+        entityType: 'Organization',
+        entityId: organizationId,
         error,
       });
     }
   },
 
-  unfollowInstitute: async (
+  unfollowOrganization: async (
     _: unknown,
-    { instituteId }: UnfollowInstituteArgs,
+    { organizationId }: UnfollowOrganizationArgs,
     { isAuthenticated, isSuperAdmin, user }: GraphQLContext
-  ): Promise<InstituteResponse> => {
+  ): Promise<OrganizationResponse> => {
     try {
       if (!isAuthenticated) {
         throw createError.authentication('Not authenticated');
       }
 
-      const institute = await Institute.findOneAndUpdate(
-        { instituteId },
+      const organization = await Organization.findOneAndUpdate(
+        { organizationId },
         { $pull: { followers: user?.id } },
         { new: true }
       );
 
-      if (!institute) {
-        throw createError.notFound(`Institute with ID ${instituteId} not found`, {
-          entityType: 'Institute',
-          entityId: instituteId,
+      if (!organization) {
+        throw createError.notFound(`Organization with ID ${organizationId} not found`, {
+          entityType: 'Organization',
+          entityId: organizationId,
         });
       }
 
       return {
         success: true,
         message: 'Institute unfollowed successfully',
-        institute,
+        organization,
       };
     } catch (error) {
       if (error instanceof BaseError) {
@@ -102,58 +102,58 @@ export const instituteMutations = {
       }
       throw createError.database('Failed to unfollow institute', {
         operation: 'unfollow',
-        entityType: 'Institute',
-        entityId: instituteId,
+        entityType: 'Organization',
+        entityId: organizationId,
         error,
       });
     }
   },
 
-  createInstituteRole: async (
+  createOrganizationRole: async (
     _: unknown,
-    { instituteId, input }: CreateInstituteRoleArgs,
+    { organizationId, input }: CreateOrganizationRoleArgs,
     { isAuthenticated, isSuperAdmin, user }: GraphQLContext
-  ): Promise<InstituteRoleResponse> => {
+  ): Promise<OrganizationRoleResponse> => {
     try {
       if (!isAuthenticated) {
         throw createError.authentication('Not authenticated');
       }
 
-      const role = await InstituteRole.create({
+      const role = await OrganizationRole.create({
         ...input,
-        instituteId,
+        organizationId,
         createdBy: user?.id,
       });
 
       return {
         success: true,
-        message: 'Institute role created successfully',
+        message: 'Organization role created successfully',
         role,
       };
     } catch (error) {
       if (error instanceof BaseError) {
         throw error;
       }
-      throw createError.database('Failed to create institute role', {
+      throw createError.database('Failed to create organization role', {
         operation: 'create',
-        entityType: 'InstituteRole',
-        instituteId,
+        entityType: 'OrganizationRole',
+        organizationId,
         error,
       });
     }
   },
 
-  updateInstituteRole: async (
+  updateOrganizationRole: async (
     _: unknown,
-    { roleId, input }: UpdateInstituteRoleArgs,
+    { roleId, input }: UpdateOrganizationRoleArgs,
     { isAuthenticated, isSuperAdmin }: GraphQLContext
-  ): Promise<InstituteRoleResponse> => {
+  ): Promise<OrganizationRoleResponse> => {
     try {
       if (!isAuthenticated) {
         throw createError.authentication('Not authenticated');
       }
 
-      const role = await InstituteRole.findOneAndUpdate(
+      const role = await OrganizationRole.findOneAndUpdate(
         { roleId },
         { $set: input },
         { new: true }
@@ -161,43 +161,43 @@ export const instituteMutations = {
 
       if (!role) {
         throw createError.notFound(`Role with ID ${roleId} not found`, {
-          entityType: 'InstituteRole',
+          entityType: 'OrganizationRole',
           entityId: roleId,
         });
       }
 
       return {
         success: true,
-        message: 'Institute role updated successfully',
+        message: 'Organization role updated successfully',
         role,
       };
     } catch (error) {
       if (error instanceof BaseError) {
         throw error;
       }
-      throw createError.database('Failed to update institute role', {
+      throw createError.database('Failed to update organization role', {
         operation: 'update',
-        entityType: 'InstituteRole',
+        entityType: 'OrganizationRole',
         roleId,
         error,
       });
     }
   },
 
-  deleteInstituteRole: async (
+  deleteOrganizationRole: async (
     _: unknown,
-    { roleId }: DeleteInstituteRoleArgs,
+    { roleId }: DeleteOrganizationRoleArgs,
     { isAuthenticated, isSuperAdmin }: GraphQLContext
-  ): Promise<InstituteRoleResponse> => {
+  ): Promise<OrganizationRoleResponse> => {
     try {
       if (!isAuthenticated) {
         throw createError.authentication('Not authenticated');
       }
 
-      const role = await InstituteRole.findOne({ roleId });
+      const role = await OrganizationRole.findOne({ roleId });
       if (!role) {
         throw createError.notFound(`Role with ID ${roleId} not found`, {
-          entityType: 'InstituteRole',
+          entityType: 'OrganizationRole',
           entityId: roleId,
         });
       }
@@ -208,46 +208,46 @@ export const instituteMutations = {
         });
       }
 
-      await InstituteRole.deleteOne({ roleId });
-      await InstituteUserRole.deleteMany({ roleId });
+      await OrganizationRole.deleteOne({ roleId });
+      await OrganizationUserRole.deleteMany({ roleId });
 
       return {
         success: true,
-        message: 'Institute role deleted successfully',
+        message: 'Organization role deleted successfully',
         role,
       };
     } catch (error) {
       if (error instanceof BaseError) {
         throw error;
       }
-      throw createError.database('Failed to delete institute role', {
+      throw createError.database('Failed to delete organization role', {
         operation: 'delete',
-        entityType: 'InstituteRole',
+        entityType: 'OrganizationRole',
         roleId,
         error,
       });
     }
   },
 
-  assignInstituteRole: async (
+  assignOrganizationRole: async (
     _: unknown,
-    { instituteId, userId, roleId, departmentId }: AssignInstituteRoleArgs,
+    { organizationId, userId, roleId, departmentId }: AssignOrganizationRoleArgs,
     { isAuthenticated, isSuperAdmin, user }: GraphQLContext
-  ): Promise<InstituteRoleResponse> => {
+  ): Promise<OrganizationRoleResponse> => {
     try {
       if (!isAuthenticated) {
         throw createError.authentication('Not authenticated');
       }
 
       // Deactivate any existing active roles
-      await InstituteUserRole.updateMany(
-        { instituteId, userId, isActive: true },
+      await OrganizationUserRole.updateMany(
+        { organizationId, userId, isActive: true },
         { $set: { isActive: false } }
       );
 
       // Create new role assignment
-      const userRole = await InstituteUserRole.create({
-        instituteId,
+      const userRole = await OrganizationUserRole.create({
+        organizationId,
         userId: user?.id,
         roleId,
         departmentId,
@@ -255,24 +255,24 @@ export const instituteMutations = {
         isActive: true,
       });
 
-      const role = await InstituteRole.findOne({ roleId });
+      const role = await OrganizationRole.findOne({ roleId });
       if (!role) {
         throw createError.notFound(`Role with ID ${roleId} not found`, {
-          entityType: 'InstituteRole',
+          entityType: 'OrganizationRole',
           entityId: roleId,
         });
       }
 
       return {
         success: true,
-        message: 'Institute role assigned successfully',
+        message: 'Organization role assigned successfully',
         role,
       };
     } catch (error) {
       if (error instanceof BaseError) {
         throw error;
       }
-      throw createError.database('Failed to assign institute role', {
+      throw createError.database('Failed to assign organization role', {
         operation: 'assign',
         entityType: 'InstituteUserRole',
         userId: user?.id,
@@ -282,32 +282,32 @@ export const instituteMutations = {
     }
   },
 
-  removeInstituteRole: async (
+  removeOrganizationRole: async (
     _: unknown,
-    { instituteId, userId }: RemoveInstituteRoleArgs,
+    { organizationId, userId }: RemoveOrganizationRoleArgs, 
     { isAuthenticated, isSuperAdmin }: GraphQLContext
-  ): Promise<InstituteRoleResponse> => {
+  ): Promise<OrganizationRoleResponse> => {
     try {
       if (!isAuthenticated) {
         throw createError.authentication('Not authenticated');
       }
 
-      await InstituteUserRole.updateMany(
-        { instituteId, userId, isActive: true },
+      await OrganizationUserRole.updateMany(
+        { organizationId, userId, isActive: true },
         { $set: { isActive: false } }
       );
 
       return {
         success: true,
-        message: 'Institute role removed successfully',
+        message: 'Organization role removed successfully',
       };
     } catch (error) {
       if (error instanceof BaseError) {
         throw error;
       }
-      throw createError.database('Failed to remove institute role', {
+      throw createError.database('Failed to remove organization role', {
         operation: 'remove',
-        entityType: 'InstituteUserRole',
+        entityType: 'OrganizationUserRole',
         userId,
         error,
       });
@@ -325,19 +325,19 @@ export const instituteMutations = {
       }
 
       // Check if user already has a pending request
-      const existingRequest = await InstituteJoinRequest.findOne({
-        instituteId: input.instituteId,
+      const existingRequest = await OrganizationJoinRequest.findOne({
+        organizationId: input.organizationId,
         userId: user?.id,
         status: 'pending',
       });
 
       if (existingRequest) {
         throw createError.validation('You already have a pending join request', {
-          field: 'instituteId',
+          field: 'organizationId',
         });
       }
 
-      const request = await InstituteJoinRequest.create({
+      const request = await OrganizationJoinRequest.create({
         ...input,
         userId: user?.id,
         status: 'pending',
@@ -354,7 +354,7 @@ export const instituteMutations = {
       }
       throw createError.database('Failed to create join request', {
         operation: 'create',
-        entityType: 'InstituteJoinRequest',
+        entityType: 'OrganizationJoinRequest',
         error,
       });
     }

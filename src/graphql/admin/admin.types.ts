@@ -2,18 +2,18 @@ import { gql } from 'apollo-server-express';
 
 export const adminTypes = gql`
 
-  type InstituteJoinRequest {
+  type OrganizationJoinRequest {
     requestId: ID!
-    instituteId: ID!
+    organizationId: ID!
     userId: ID!
     status: String!
     createdAt: String!
     updatedAt: String!
   }
 
-  type InstituteJoinRequestStatus {
+  type OrganizationJoinRequestStatus {
     requestId: ID!
-    instituteId: ID!
+    organizationId: ID!
     userId: ID!
     status: String!
     createdAt: String!
@@ -23,13 +23,13 @@ export const adminTypes = gql`
   type JoinRequestResponse {
     success: Boolean!
     message: String!
-    request: InstituteJoinRequest
+    request: OrganizationJoinRequest
   }
 
   type JoinRequestsResponse {
     success: Boolean!
     message: String!
-    requests: [InstituteJoinRequest!]!
+    requests: [OrganizationJoinRequest!]!
     total: Int!
     page: Int!
     limit: Int!
@@ -38,7 +38,7 @@ export const adminTypes = gql`
   extend type Query {
     # Join request queries
     getJoinRequests(
-      instituteId: ID!
+      organizationId: ID!
       status: String
       page: Int = 1
       limit: Int = 10

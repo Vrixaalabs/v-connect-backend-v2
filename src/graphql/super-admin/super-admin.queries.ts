@@ -1,7 +1,7 @@
 import { GraphQLContext } from '../context';
 import { createError } from '../../middleware/errorHandler';
 import { Institute } from '../../models/Institute';
-import { InstituteUserRole } from '../../models/InstituteUserRole';
+import { InstituteUserRole } from '../../models/OrganizationUserRole';
 import { User } from '../../models/User';
 import { BaseError } from '../../types/errors/base.error';
 import {
