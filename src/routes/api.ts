@@ -15,7 +15,7 @@ import {
 import { Organization } from '../models/Organization';
 import { Role } from '../models/Role';
 import { User } from '../models/User';
-import { UserOrganizationRole } from '../models/UserOrganizationRole';
+import { OrganizationUserRole } from '../models/OrganizationUserRole';
 import authRoutes from './auth';
 import organizationRoutes from './organization';
 
@@ -154,7 +154,7 @@ router.post(
       }
 
       // add to userorganization role
-      const userOrganizationRole = await UserOrganizationRole.create({
+      const userOrganizationRole = await OrganizationUserRole.create({
         userId: user.userId,
         organizationId: uuidv4(),
         roleId: crmOwnerRole?.roleId,
@@ -265,7 +265,7 @@ router.post(
       }
 
       // Assign Organization Admin role
-      await UserOrganizationRole.create(
+      await OrganizationUserRole.create(
         [
           {
             userId: user.userId,

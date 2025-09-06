@@ -301,7 +301,7 @@ export const superAdminMutations = {
       throw createError.internal('Failed to update settings', { error });
     }
   },
-  createInstitute: async (
+  createOrganization: async (
     _: unknown,
     { input }: { input: CreateOrganizationInput },
     { isAuthenticated, isSuperAdmin, user }: GraphQLContext

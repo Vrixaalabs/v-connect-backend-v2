@@ -11,6 +11,7 @@ export interface IOrganization extends Document {
   addressId: string;
   logo?: string;
   banner?: string;
+  isPrimary: boolean;
   coverImage?: string;
   website?: string;
   email: string;
@@ -49,6 +50,10 @@ const organizationSchema = new Schema<IOrganization>({
   },
   banner: {
     type: String,
+    required: true,
+  },
+  isPrimary: {
+    type: Boolean,
     required: true,
   },
   coverImage: {

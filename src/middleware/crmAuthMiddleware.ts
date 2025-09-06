@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
 import { config } from '../config/app.config';
 import { Role } from '../models/Role';
-import { UserOrganizationRole } from '../models/UserOrganizationRole';
+import { OrganizationUserRole } from '../models/OrganizationUserRole';
 
 // Basic auth middleware for initial setup
 export const basicAuthMiddleware = async (
@@ -60,7 +60,7 @@ export const verifyCrmOwner = async (
       return res.status(500).json({ message: 'CRM Owner role not found' });
     }
 
-    const hasRole = await UserOrganizationRole.findOne({
+    const hasRole = await OrganizationUserRole.findOne({
       userId: user.userId,
       roleId: crmOwnerRole.roleId,
       status: 'active',

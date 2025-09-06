@@ -20,7 +20,7 @@ export const organizationTypes = gql`
   }
 
   type Organization {
-    instituteId: ID!
+    organizationId: String!
     name: String!
     slug: String!
     description: String!
@@ -43,7 +43,7 @@ export const organizationTypes = gql`
 
   type OrganizationRole {
     roleId: ID!
-    instituteId: ID!
+    organizationId: String!
     name: String!
     description: String!
     permissions: [String!]!
@@ -55,7 +55,7 @@ export const organizationTypes = gql`
 
   type OrganizationUserRole {
     assignmentId: ID!
-    instituteId: ID!
+    organizationId: String!
     userId: ID!
     roleId: ID!
     departmentId: String
@@ -130,13 +130,13 @@ export const organizationTypes = gql`
   type OrganizationResponse {
     success: Boolean!
     message: String!
-    institute: Institute
+    organization: Organization
   }
 
   type OrganizationsResponse {
     success: Boolean!
     message: String!
-    institutes: [Institute!]!
+    organizations: [Organization!]!
     total: Int!
     page: Int!
     limit: Int!

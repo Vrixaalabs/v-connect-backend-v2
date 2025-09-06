@@ -9,6 +9,11 @@ export interface OrganizationUserRole {
   departmentId?: string;
   assignedBy: string;
   isActive: boolean;
+  status: 'active' | 'inactive' | 'pending';
+  isPrimary: boolean;
+  metadata?: {
+    acceptedAt?: Date;
+  };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -49,6 +54,20 @@ const OrganizationUserRoleSchema = new Schema<OrganizationUserRole>({
   isActive: {
     type: Boolean,
     default: true,
+  },
+  status: {
+    type: String,
+    enum: ['active', 'inactive', 'pending'],
+    default: 'pending',
+  },
+  isPrimary: {
+    type: Boolean,
+    default: false,
+  },
+  metadata: {
+    acceptedAt: {
+      type: Date,
+    },
   },
   createdAt: {
     type: Date,

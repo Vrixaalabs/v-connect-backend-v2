@@ -6,7 +6,7 @@ import { verifyCrmOwner } from '../middleware/crmAuthMiddleware';
 import { Organization } from '../models/Organization';
 import { Role } from '../models/Role';
 import { IUser } from '../models/User';
-import { UserOrganizationRole } from '../models/UserOrganizationRole';
+import { OrganizationUserRole } from '../models/OrganizationUserRole';
 
 const router = Router();
 
@@ -62,7 +62,7 @@ router.post(
       }
 
       // Add user to organization as admin
-      await UserOrganizationRole.create(
+      await OrganizationUserRole.create(
         [
           {
             userId: user.userId,

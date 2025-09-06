@@ -92,8 +92,8 @@ router.post(
         });
       }
       // Get admin role - do this outside transaction as it's just a read
-      const adminRole = await Role.findOne({ name: 'Admin' });
-      if (!adminRole) {
+      const memberRole = await Role.findOne({ name: 'Member' });
+      if (!memberRole) {
         await session.abortTransaction();
         session.endSession();
         return res.status(500).json({

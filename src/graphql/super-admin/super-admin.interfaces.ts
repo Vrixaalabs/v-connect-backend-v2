@@ -167,7 +167,7 @@ export interface SystemStatus {
 }
 
 // Query Interfaces
-export interface GetInstituteAdminsArgs {
+export interface GetOrganizationAdminsArgs {
   page?: number;
   limit?: number;
   search?: string;
