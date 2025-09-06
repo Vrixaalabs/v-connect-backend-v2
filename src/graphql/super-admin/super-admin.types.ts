@@ -23,16 +23,16 @@ export const superAdminTypes = gql`
     lastUpdated: String!
   }
 
-  type InstituteAdminResponse {
+  type OrganizationAdminResponse {
     success: Boolean!
     message: String!
-    admin: InstituteUserRole
+    admin: OrganizationUserRole
   }
 
-  type InstituteAdminsResponse {
+  type OrganizationAdminsResponse {
     success: Boolean!
     message: String!
-    admins: [InstituteUserRole!]!
+    admins: [OrganizationUserRole!]!
     total: Int!
     page: Int!
     limit: Int!
@@ -40,7 +40,7 @@ export const superAdminTypes = gql`
 
   input AssignAdminInput {
     email: String!
-    instituteId: ID!
+    organizationId: ID!
   }
 
   input UpdateSuperAdminProfileInput {
@@ -103,12 +103,12 @@ export const superAdminTypes = gql`
     getSystemStatus: SystemStatus!
 
     # Admin management queries
-    getInstituteAdmins(
+    getOrganizationAdmins(
       page: Int = 1
       limit: Int = 10
       search: String
-    ): InstituteAdminsResponse!
-    getInstituteAdmin(adminId: ID!): InstituteAdminResponse!
+    ): OrganizationAdminsResponse!
+    getOrganizationAdmin(adminId: ID!): OrganizationAdminResponse!
 
     # Settings queries
     getSuperAdminSettings: SuperAdminSettings!
@@ -125,12 +125,12 @@ export const superAdminTypes = gql`
     updateSuperAdminPassword(input: UpdatePasswordInput!): BasicResponse!
     updateSuperAdminSettings(input: UpdateSuperAdminSettingsInput!): SuperAdminSettingsResponse!
     # Institute management mutations
-    createInstitute(input: CreateInstituteInput!): InstituteResponse!
-    updateInstitute(instituteId: ID!, input: UpdateInstituteInput!): InstituteResponse!
-    deleteInstitute(instituteId: ID!): InstituteResponse!
+    createOrganization(input: CreateOrganizationInput!): OrganizationResponse!
+    updateOrganization(organizationId: ID!, input: UpdateOrganizationInput!): OrganizationResponse!
+    deleteOrganization(organizationId: ID!): OrganizationResponse!
 
     # Admin management mutations
-    assignAdmin(input: AssignAdminInput!): InstituteAdminResponse!
-    removeAdmin(adminId: ID!): InstituteAdminResponse!
+    assignAdmin(input: AssignAdminInput!): OrganizationAdminResponse!
+    removeAdmin(adminId: ID!): OrganizationAdminResponse!
   }
 `;

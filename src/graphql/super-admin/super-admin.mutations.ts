@@ -1,12 +1,12 @@
 import { GraphQLContext } from '../context';
 import { createError } from '../../middleware/errorHandler';
-import { Institute } from '../../models/Institute';
-import { InstituteRole } from '../../models/InstituteRole';
-import { InstituteUserRole } from '../../models/InstituteUserRole';
-import { InstituteJoinRequest } from '../../models/InstituteJoinRequest';
+import { Organization } from '../../models/Organization';
+import { OrganizationRole } from '../../models/OrganizationRole';
+import { OrganizationUserRole } from '../../models/OrganizationUserRole';
+import { OrganizationJoinRequest } from '../../models/OrganizationJoinRequest';
 import { User } from '../../models/User';
 import { BaseError } from '../../types/errors/base.error';
-import { CreateInstituteInput, UpdateInstituteInput } from '../institute/institute.interfaces';
+import { CreateOrganizationInput, UpdateOrganizationInput } from '../organization/organization.interfaces';
 import { compare, hash } from 'bcryptjs';
 import { sign, SignOptions } from 'jsonwebtoken';
 import { config } from '../../config/app.config';
@@ -20,15 +20,15 @@ import {
   BaseResponse,
   UserResponse,
   SuperAdminSettingsResponse,
-  InstituteResponse,
-  InstituteAdminResponse,
+  OrganizationResponse,
+  OrganizationAdminResponse,
   AssignAdminInput,
-  UpdateInstituteArgs,
   RemoveAdminArgs,
   UpdatePasswordArgs,
   UpdateSuperAdminProfileArgs,
   UpdateSuperAdminSettingsArgs,
   SuperAdmin2FAArgs,
+  UpdateOrganizationArgs,
 } from './super-admin.interfaces';
 
 export const superAdminMutations = {
@@ -301,9 +301,9 @@ export const superAdminMutations = {
       throw createError.internal('Failed to update settings', { error });
     }
   },
-  createInstitute: async (
+  createOrganization: async (
     _: unknown,
-    { input }: { input: CreateInstituteInput },
+    { input }: { input: CreateOrganizationInput },
     { isAuthenticated, isSuperAdmin, user }: GraphQLContext
   ) => {
     try {
@@ -318,17 +318,17 @@ export const superAdminMutations = {
       // handle the university name to make it slug
       const slug = input.name.toLowerCase().replace(/ /g, '-');
 
-      const institute = new Institute({
+      const organization = new Organization({
         ...input,
         slug,
       });
-      await institute.save();
+      await organization.save();
 
       // Create default roles
       const defaultRoles = [
         {
           name: 'Admin',
-          description: 'Institute administrator with full access',
+          description: 'Organization administrator with full access',
           permissions: ['MANAGE_ROLES', 'MANAGE_USERS', 'MANAGE_DEPARTMENTS', 'MANAGE_REQUESTS'],
           isDefault: true,
         },
@@ -348,9 +348,9 @@ export const superAdminMutations = {
 
       await Promise.all(
         defaultRoles.map(role =>
-          InstituteRole.create({
+          OrganizationRole.create({
             ...role,
-            instituteId: institute.instituteId,
+            organizationId: organization.organizationId,
             createdBy: user?.id,
           })
         )
@@ -358,24 +358,24 @@ export const superAdminMutations = {
 
       return {
         success: true,
-        message: 'Institute created successfully',
-        institute,
+        message: 'Organization created successfully',
+        organization,
       };
     } catch (error) {
       if (error instanceof BaseError) {
         throw error;
       }
-      throw createError.database('Failed to create institute', {
+      throw createError.database('Failed to create organization', {
         operation: 'create',
-        entityType: 'Institute',
+        entityType: 'Organization',
         error,
       });
     }
   },
 
-  updateInstitute: async (
+  updateOrganization: async (
     _: unknown,
-    { instituteId, input }: UpdateInstituteArgs,
+    { organizationId, input }: UpdateOrganizationArgs,
     { isAuthenticated, isSuperAdmin }: GraphQLContext
   ) => {
     try {
@@ -384,43 +384,43 @@ export const superAdminMutations = {
       }
 
       if (!isSuperAdmin) {
-        throw createError.authorization('Only super admin can update institutes');
+        throw createError.authorization('Only super admin can update organizations');
       }
 
-      const institute = await Institute.findOneAndUpdate(
-        { instituteId },
+      const organization = await Organization.findOneAndUpdate(
+        { organizationId },
         { $set: input },
         { new: true }
       );
 
-      if (!institute) {
-        throw createError.notFound(`Institute with ID ${instituteId} not found`, {
-          entityType: 'Institute',
-          entityId: instituteId,
+      if (!organization) {
+        throw createError.notFound(`Organization with ID ${organizationId} not found`, {
+          entityType: 'Organization',
+          entityId: organizationId,
         });
       }
 
       return {
         success: true,
-        message: 'Institute updated successfully',
-        institute,
+        message: 'Organization updated successfully',
+        organization,
       };
     } catch (error) {
       if (error instanceof BaseError) {
         throw error;
       }
-      throw createError.database('Failed to update institute', {
+      throw createError.database('Failed to update organization', {
         operation: 'update',
-        entityType: 'Institute',
-        entityId: instituteId,
+        entityType: 'Organization',
+        entityId: organizationId,
         error,
       });
     }
   },
 
-  deleteInstitute: async (
+  deleteOrganization: async (
     _: unknown,
-    { instituteId }: { instituteId: string },
+    { organizationId }: { organizationId: string },
     { isAuthenticated, isSuperAdmin }: GraphQLContext
   ) => {
     try {
@@ -429,37 +429,37 @@ export const superAdminMutations = {
       }
 
       if (!isSuperAdmin) {
-        throw createError.authorization('Only super admin can delete institutes');
+        throw createError.authorization('Only super admin can delete organizations');
       }
 
-      const institute = await Institute.findOneAndDelete({ instituteId });
-      if (!institute) {
-        throw createError.notFound(`Institute with ID ${instituteId} not found`, {
-          entityType: 'Institute',
-          entityId: instituteId,
+      const organization = await Organization.findOneAndDelete({ organizationId });
+      if (!organization) {
+        throw createError.notFound(`Organization with ID ${organizationId} not found`, {
+          entityType: 'Organization',
+          entityId: organizationId,
         });
       }
 
       // Delete related data
       await Promise.all([
-        InstituteRole.deleteMany({ instituteId }),
-        InstituteUserRole.deleteMany({ instituteId }),
-        InstituteJoinRequest.deleteMany({ instituteId }),
+        OrganizationRole.deleteMany({ organizationId }),
+        OrganizationUserRole.deleteMany({ organizationId }),
+        OrganizationJoinRequest.deleteMany({ organizationId }),
       ]);
 
       return {
         success: true,
-        message: 'Institute deleted successfully',
-        institute,
+        message: 'Organization deleted successfully',
+        organization,
       };
     } catch (error) {
       if (error instanceof BaseError) {
         throw error;
       }
-      throw createError.database('Failed to delete institute', {
+      throw createError.database('Failed to delete organization', {
         operation: 'delete',
-        entityType: 'Institute',
-        entityId: instituteId,
+        entityType: 'Organization',
+        entityId: organizationId,
         error,
       });
     }
@@ -476,7 +476,7 @@ export const superAdminMutations = {
       }
 
       if (!isSuperAdmin) {
-        throw createError.authorization('Only super admin can assign institute admins');
+        throw createError.authorization('Only super admin can assign organization admins');
       }
 
       // Find user by email
@@ -489,36 +489,36 @@ export const superAdminMutations = {
       }
 
       // Find institute
-      const institute = await Institute.findOne({ instituteId: input.instituteId });
-      if (!institute) {
-        throw createError.notFound(`Institute with ID ${input.instituteId} not found`, {
-          entityType: 'Institute',
-          entityId: input.instituteId,
+      const organization = await Organization.findOne({ organizationId: input.organizationId });
+      if (!organization) {
+        throw createError.notFound(`Organization with ID ${input.organizationId} not found`, {
+          entityType: 'Organization',
+          entityId: input.organizationId,
         });
       }
 
       // Find admin role
-      const adminRole = await InstituteRole.findOne({
-        instituteId: input.instituteId,
+      const adminRole = await OrganizationRole.findOne({
+        organizationId: input.organizationId,
         name: 'Admin',
       });
 
       if (!adminRole) {
-        throw createError.notFound(`Admin role not found for institute ${input.instituteId}`, {
-          entityType: 'InstituteRole',
-          instituteId: input.instituteId,
+        throw createError.notFound(`Admin role not found for organization ${input.organizationId}`, {
+          entityType: 'OrganizationRole',
+          organizationId: input.organizationId,
         });
       }
 
       // Deactivate any existing active roles
-      await InstituteUserRole.updateMany(
-        { instituteId: input.instituteId, userId: targetUser.userId, isActive: true },
+      await OrganizationUserRole.updateMany(
+        { organizationId: input.organizationId, userId: targetUser.userId, isActive: true },
         { $set: { isActive: false } }
       );
 
       // Create new role assignment
-      const userRole = await InstituteUserRole.create({
-        instituteId: input.instituteId,
+      const userRole = await OrganizationUserRole.create({
+        organizationId: input.organizationId,
         userId: targetUser.userId,
         roleId: adminRole.roleId,
         assignedBy: user?.id,
@@ -527,16 +527,16 @@ export const superAdminMutations = {
 
       return {
         success: true,
-        message: 'Institute admin assigned successfully',
+        message: 'Organization admin assigned successfully',
         admin: userRole,
       };
     } catch (error) {
       if (error instanceof BaseError) {
         throw error;
       }
-      throw createError.database('Failed to assign institute admin', {
+      throw createError.database('Failed to assign organization admin', {
         operation: 'assignAdmin',
-        entityType: 'InstituteUserRole',
+        entityType: 'OrganizationUserRole',
         error,
       });
     }
@@ -553,34 +553,34 @@ export const superAdminMutations = {
       }
 
       if (!isSuperAdmin) {
-        throw createError.authorization('Only super admin can remove institute admins');
+        throw createError.authorization('Only super admin can remove organization admins');
       }
 
-      const admin = await InstituteUserRole.findOne({ assignmentId: adminId });
+      const admin = await OrganizationUserRole.findOne({ assignmentId: adminId });
       if (!admin) {
         throw createError.notFound(`Admin with ID ${adminId} not found`, {
-          entityType: 'InstituteUserRole',
+          entityType: 'OrganizationUserRole',
           entityId: adminId,
         });
       }
 
-      await InstituteUserRole.updateOne(
+      await OrganizationUserRole.updateOne(
         { assignmentId: adminId },
         { $set: { isActive: false } }
       );
 
       return {
         success: true,
-        message: 'Institute admin removed successfully',
+        message: 'Organization admin removed successfully',
         admin,
       };
     } catch (error) {
       if (error instanceof BaseError) {
         throw error;
       }
-      throw createError.database('Failed to remove institute admin', {
+      throw createError.database('Failed to remove organization admin', {
         operation: 'removeAdmin',
-        entityType: 'InstituteUserRole',
+        entityType: 'OrganizationUserRole',
         adminId,
         error,
       });

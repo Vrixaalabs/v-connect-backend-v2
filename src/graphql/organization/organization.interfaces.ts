@@ -1,6 +1,8 @@
 import { IInstitute } from '../../models/Institute';
-import { IInstituteRole } from '../../models/InstituteRole';
-import { IInstituteJoinRequest } from '../../models/InstituteJoinRequest';
+import { IOrganization } from '../../models/Organization';
+import { IOrganizationRole } from '../../models/OrganizationRole';
+import { OrganizationRole } from '../../models/OrganizationRole';
+import { OrganizationJoinRequest } from '../../models/OrganizationJoinRequest';
 
 // Base Response Types
 interface BaseResponse {
@@ -9,93 +11,93 @@ interface BaseResponse {
 }
 
 // Institute Response Types
-export interface InstituteResponse extends BaseResponse {
-  institute?: IInstitute;
+export interface OrganizationResponse extends BaseResponse {
+  organization?: IOrganization;
 }
 
-export interface InstitutesResponse extends BaseResponse {
-  institutes: IInstitute[];
+export interface OrganizationsResponse extends BaseResponse {
+  organizations: IOrganization[];
   total: number;
   page: number;
   limit: number;
 }
 
 // Institute Role Response Types
-export interface InstituteRoleResponse extends BaseResponse {
-  role?: IInstituteRole;
+export interface OrganizationRoleResponse extends BaseResponse {
+  role?: IOrganizationRole;
 }
 
-export interface InstituteRolesResponse extends BaseResponse {
-  roles: IInstituteRole[];
+export interface OrganizationRolesResponse extends BaseResponse {
+  roles: IOrganizationRole[];
 }
 
 // Join Request Response Types
 export interface JoinRequestResponse extends BaseResponse {
-  request?: IInstituteJoinRequest;
+  request?: OrganizationJoinRequest;
 }
 
 export interface JoinRequestsResponse extends BaseResponse {
-  requests: IInstituteJoinRequest[];
+  requests: OrganizationJoinRequest[];
   total: number;
   page: number;
   limit: number;
 }
 
 // Query Request Types
-export interface GetInstituteByIdArgs {
-  instituteId: string;
+export interface GetOrganizationByIdArgs {
+  organizationId: string;
 }
 
-export interface GetInstituteBySlugArgs {
+export interface GetOrganizationBySlugArgs {
   slug: string;
 }
 
-export interface GetInstituteRolesArgs {
-  instituteId: string;
+export interface GetOrganizationRolesArgs {
+  organizationId: string;
 }
 
-export interface GetInstituteRoleArgs {
+export interface GetOrganizationRoleArgs {
   roleId: string;
 }
 
-export interface SearchInstitutesArgs {
-  filter?: InstituteFilterInput;
+export interface SearchOrganizationsArgs {
+  filter?: OrganizationFilterInput;
   page?: number;
   limit?: number;
 }
 
 // Mutation Request Types
-export interface FollowInstituteArgs {
-  instituteId: string;
+export interface FollowOrganizationArgs {
+  organizationId: string;
 }
 
-export interface UnfollowInstituteArgs {
-  instituteId: string;
+export interface UnfollowOrganizationArgs {
+  organizationId: string;
 }
 
-export interface CreateInstituteRoleArgs {
-  instituteId: string;
-  input: CreateInstituteRoleInput;
+export interface CreateOrganizationRoleArgs {
+  organizationId: string;
+  input: CreateOrganizationRoleInput;
 }
 
-export interface UpdateInstituteRoleArgs {
+export interface UpdateOrganizationRoleArgs {
   roleId: string;
-  input: UpdateInstituteRoleInput;
+  input: UpdateOrganizationRoleInput;
 }
 
-export interface DeleteInstituteRoleArgs {
+export interface DeleteOrganizationRoleArgs {
   roleId: string;
 }
 
-export interface AssignInstituteRoleArgs {
-  instituteId: string;
+export interface AssignOrganizationRoleArgs {
+  organizationId: string;
   userId: string;
   roleId: string;
   departmentId?: string;
 }
 
-export interface RemoveInstituteRoleArgs {
-  instituteId: string;
+export interface RemoveOrganizationRoleArgs {
+  organizationId: string;
   userId: string;
 }
 
@@ -103,7 +105,7 @@ export interface CreateJoinRequestArgs {
   input: CreateJoinRequestInput;
 }
 
-export interface CreateInstituteInput {
+export interface CreateOrganizationInput {
   name: string;
   description: string;
   logo?: string;
@@ -121,7 +123,7 @@ export interface CreateInstituteInput {
   };
 }
 
-export interface UpdateInstituteInput {
+export interface UpdateOrganizationInput {
   name?: string;
   description?: string;
   logo?: string;
@@ -144,14 +146,14 @@ export interface UpdateInstituteInput {
   }[];
 }
 
-export interface CreateInstituteRoleInput {
+export interface CreateOrganizationRoleInput {
   name: string;
   description: string;
   permissions: string[];
   isDefault?: boolean;
 }
 
-export interface UpdateInstituteRoleInput {
+export interface UpdateOrganizationRoleInput {
   name?: string;
   description?: string;
   permissions?: string[];
@@ -159,7 +161,7 @@ export interface UpdateInstituteRoleInput {
 }
 
 export interface CreateJoinRequestInput {
-  instituteId: string;
+  organizationId: string;
   fullName: string;
   email: string;
   rollNumber: string;
@@ -167,7 +169,7 @@ export interface CreateJoinRequestInput {
   batch: string;
 }
 
-export interface InstituteFilterInput {
+export interface OrganizationFilterInput {
   name?: string;
   city?: string;
   state?: string;

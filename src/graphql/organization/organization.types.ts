@@ -1,6 +1,6 @@
 import { gql } from 'apollo-server-express';
 
-export const instituteTypes = gql`
+export const organizationTypes = gql`
   type Department {
     id: ID!
     name: String!
@@ -10,7 +10,7 @@ export const instituteTypes = gql`
     updatedAt: String!
   }
 
-  type InstituteAddress {
+  type OrganizationAddress {
     line1: String!
     line2: String
     city: String!
@@ -19,8 +19,8 @@ export const instituteTypes = gql`
     pinCode: String!
   }
 
-  type Institute {
-    instituteId: ID!
+  type Organization {
+    organizationId: String!
     name: String!
     slug: String!
     description: String!
@@ -30,7 +30,7 @@ export const instituteTypes = gql`
     website: String
     email: String!
     phone: String!
-    address: InstituteAddress!
+    address: OrganizationAddress!
     departments: [Department!]
     followers: [String!]!
     studentsCount: Int!
@@ -41,9 +41,9 @@ export const instituteTypes = gql`
     updatedAt: String!
   }
 
-  type InstituteRole {
+  type OrganizationRole {
     roleId: ID!
-    instituteId: ID!
+    organizationId: String!
     name: String!
     description: String!
     permissions: [String!]!
@@ -53,9 +53,9 @@ export const instituteTypes = gql`
     updatedAt: String!
   }
 
-  type InstituteUserRole {
+  type OrganizationUserRole {
     assignmentId: ID!
-    instituteId: ID!
+    organizationId: String!
     userId: ID!
     roleId: ID!
     departmentId: String
@@ -71,7 +71,7 @@ export const instituteTypes = gql`
     description: String
   }
 
-  input InstituteAddressInput {
+  input OrganizationAddressInput {
     line1: String!
     line2: String
     city: String!
@@ -80,7 +80,7 @@ export const instituteTypes = gql`
     pinCode: String!
   }
 
-  input CreateInstituteInput {
+  input CreateOrganizationInput {
     name: String!
     description: String!
     logo: String
@@ -88,11 +88,11 @@ export const instituteTypes = gql`
     website: String
     email: String!
     phone: String!
-    address: InstituteAddressInput
+    address: OrganizationAddressInput
     departments: [DepartmentInput!]
   }
 
-  input UpdateInstituteInput {
+  input UpdateOrganizationInput {
     name: String
     description: String
     logo: String
@@ -100,25 +100,25 @@ export const instituteTypes = gql`
     website: String
     email: String
     phone: String
-    address: InstituteAddressInput
+    address: OrganizationAddressInput
     departments: [DepartmentInput!]
   }
 
-  input CreateInstituteRoleInput {
+  input CreateOrganizationRoleInput {
     name: String!
     description: String!
     permissions: [String!]!
     isDefault: Boolean
   }
 
-  input UpdateInstituteRoleInput {
+  input UpdateOrganizationRoleInput {
     name: String
     description: String
     permissions: [String!]
     isDefault: Boolean
   }
 
-  input InstituteFilterInput {
+  input OrganizationFilterInput {
     name: String
     city: String
     state: String
@@ -127,35 +127,35 @@ export const instituteTypes = gql`
     search: String
   }
 
-  type InstituteResponse {
+  type OrganizationResponse {
     success: Boolean!
     message: String!
-    institute: Institute
+    organization: Organization
   }
 
-  type InstitutesResponse {
+  type OrganizationsResponse {
     success: Boolean!
     message: String!
-    institutes: [Institute!]!
+    organizations: [Organization!]!
     total: Int!
     page: Int!
     limit: Int!
   }
 
-  type InstituteRoleResponse {
+  type OrganizationRoleResponse {
     success: Boolean!
     message: String!
-    role: InstituteRole
+    role: OrganizationRole
   }
 
-  type InstituteRolesResponse {
+  type OrganizationRolesResponse {
     success: Boolean!
     message: String!
-    roles: [InstituteRole!]!
+    roles: [OrganizationRole!]!
   }
 
   input CreateJoinRequestInput {
-    instituteId: ID!
+    organizationId: ID!
     userId: ID!
     status: String!
     createdAt: String!
@@ -163,41 +163,41 @@ export const instituteTypes = gql`
   }
 
   extend type Query {
-    # Institute queries
-    searchInstitutes(
-      filter: InstituteFilterInput
+    # Organization queries
+    searchOrganizations(
+      filter: OrganizationFilterInput
       page: Int = 1
       limit: Int = 10
-    ): InstitutesResponse!
+    ): OrganizationsResponse!
     
-    getInstituteBySlug(slug: String!): InstituteResponse!
-    getInstituteById(instituteId: ID!): InstituteResponse!
+    getOrganizationBySlug(slug: String!): OrganizationResponse!
+    getOrganizationById(organizationId: ID!): OrganizationResponse!
     
     # Role queries
-    getInstituteRoles(instituteId: ID!): InstituteRolesResponse!
-    getInstituteRole(roleId: ID!): InstituteRoleResponse!
+    getOrganizationRoles(organizationId: ID!): OrganizationRolesResponse!
+    getOrganizationRole(roleId: ID!): OrganizationRoleResponse!
   }
 
   extend type Mutation {    
-    assignInstituteRole(
-      instituteId: ID!
+    assignOrganizationRole(
+      organizationId: ID!
       userId: ID!
       roleId: ID!
       departmentId: ID
-    ): InstituteRoleResponse!
+    ): OrganizationRoleResponse!
     
-    removeInstituteRole(
-      instituteId: ID!
+    removeOrganizationRole(
+      organizationId: ID!
       userId: ID!
-    ): InstituteRoleResponse!
+    ): OrganizationRoleResponse!
 
-    # Institute mutations
-    followInstitute(instituteId: ID!): InstituteResponse!
-    unfollowInstitute(instituteId: ID!): InstituteResponse!
+    # Organization mutations
+    followOrganization(organizationId: ID!): OrganizationResponse!
+    unfollowOrganization(organizationId: ID!): OrganizationResponse!
 
-    createInstituteRole(instituteId: ID!, input: CreateInstituteRoleInput!): InstituteRoleResponse!
-    updateInstituteRole(roleId: ID!, input: UpdateInstituteRoleInput!): InstituteRoleResponse!
-    deleteInstituteRole(roleId: ID!): InstituteRoleResponse!
+    createOrganizationRole(organizationId: ID!, input: CreateOrganizationRoleInput!): OrganizationRoleResponse!
+    updateOrganizationRole(roleId: ID!, input: UpdateOrganizationRoleInput!): OrganizationRoleResponse!
+    deleteOrganizationRole(roleId: ID!): OrganizationRoleResponse!
 
     createJoinRequest(input: CreateJoinRequestInput!): JoinRequestResponse!
   }

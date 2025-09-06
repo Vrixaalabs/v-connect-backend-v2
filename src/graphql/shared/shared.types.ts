@@ -21,7 +21,7 @@ export const sharedTypes = gql`
     updatedAt: String!
   }
 
-  type InstituteAddress {
+  type OrganizationAddress {
     line1: String!
     line2: String
     city: String!
@@ -30,9 +30,9 @@ export const sharedTypes = gql`
     pinCode: String!
   }
 
-  type InstituteRole {
+  type OrganizationRole {
     roleId: ID!
-    instituteId: ID!
+    organizationId: String!
     name: String!
     description: String!
     permissions: [String!]!
@@ -42,9 +42,9 @@ export const sharedTypes = gql`
     updatedAt: String!
   }
 
-  type InstituteUserRole {
+  type OrganizationUserRole {
     assignmentId: ID!
-    instituteId: ID!
+    organizationId: String!
     userId: ID!
     roleId: ID!
     departmentId: String
@@ -60,7 +60,7 @@ export const sharedTypes = gql`
     description: String
   }
 
-  input InstituteAddressInput {
+  input OrganizationAddressInput {
     line1: String!
     line2: String
     city: String!

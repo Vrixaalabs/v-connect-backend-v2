@@ -1,12 +1,12 @@
 import { GraphQLContext } from '../context';
 import { createError } from '../../middleware/errorHandler';
-import { InstituteJoinRequest } from '../../models/InstituteJoinRequest';
+import { OrganizationJoinRequest } from '../../models/OrganizationJoinRequest';
 import { BaseError } from '../../types/errors/base.error';
 
 export const adminQueries = {
   getJoinRequests: async (
     _: unknown,
-    { instituteId, status, page = 1, limit = 10 }: { instituteId: string; status?: string; page: number; limit: number },
+    { organizationId, status, page = 1, limit = 10 }: { organizationId: string; status?: string; page: number; limit: number },
     { isAuthenticated }: GraphQLContext
   ) => {
     try {
@@ -14,13 +14,13 @@ export const adminQueries = {
         throw createError.authentication('Not authenticated');
       }
 
-      const query: any = { instituteId };
+      const query: any = { organizationId };
       if (status) {
         query.status = status;
       }
 
-      const total = await InstituteJoinRequest.countDocuments(query);
-      const requests = await InstituteJoinRequest.find(query)
+      const total = await OrganizationJoinRequest.countDocuments(query);
+      const requests = await OrganizationJoinRequest.find(query)
         .skip((page - 1) * limit)
         .limit(limit)
         .sort({ createdAt: -1 });
@@ -39,8 +39,8 @@ export const adminQueries = {
       }
       throw createError.database('Failed to fetch join requests', {
         operation: 'getJoinRequests',
-        entityType: 'InstituteJoinRequest',
-        instituteId,
+        entityType: 'OrganizationJoinRequest',
+        organizationId,
         error,
       });
     }
@@ -56,10 +56,10 @@ export const adminQueries = {
         throw createError.authentication('Not authenticated');
       }
 
-      const request = await InstituteJoinRequest.findOne({ requestId });
+      const request = await OrganizationJoinRequest.findOne({ requestId });
       if (!request) {
         throw createError.notFound(`Join request with ID ${requestId} not found`, {
-          entityType: 'InstituteJoinRequest',
+          entityType: 'OrganizationJoinRequest',
           entityId: requestId,
         });
       }
@@ -75,7 +75,7 @@ export const adminQueries = {
       }
       throw createError.database('Failed to fetch join request', {
         operation: 'getJoinRequest',
-        entityType: 'InstituteJoinRequest',
+        entityType: 'OrganizationJoinRequest',
         requestId,
         error,
       });

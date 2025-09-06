@@ -1,38 +1,46 @@
 import { Schema, model } from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
 
-export interface IInstituteUserRole {
+export interface OrganizationUserRole {
   assignmentId: string;
-  instituteId: string;
+  organizationId: string;
   userId: string;
   roleId: string;
   departmentId?: string;
   assignedBy: string;
   isActive: boolean;
+  status: 'active' | 'inactive' | 'pending';
+  isPrimary: boolean;
+  metadata?: {
+    acceptedAt?: Date;
+  };
   createdAt: Date;
   updatedAt: Date;
 }
 
-const InstituteUserRoleSchema = new Schema<IInstituteUserRole>({
+const OrganizationUserRoleSchema = new Schema<OrganizationUserRole>({
   assignmentId: {
     type: String,
     default: () => uuidv4(),
     unique: true,
   },
-  instituteId: {
+  organizationId: {
     type: String,
     required: true,
-    ref: 'Institute',
+    ref: 'Organization',
+    refPath: 'organizationId',
   },
   userId: {
     type: String,
     required: true,
     ref: 'User',
+    refPath: 'userId',
   },
   roleId: {
     type: String,
     required: true,
-    ref: 'InstituteRole',
+    ref: 'Role',
+    refPath: 'roleId',
   },
   departmentId: {
     type: String,
@@ -41,10 +49,25 @@ const InstituteUserRoleSchema = new Schema<IInstituteUserRole>({
     type: String,
     required: true,
     ref: 'User',
+    refPath: 'userId',
   },
   isActive: {
     type: Boolean,
     default: true,
+  },
+  status: {
+    type: String,
+    enum: ['active', 'inactive', 'pending'],
+    default: 'pending',
+  },
+  isPrimary: {
+    type: Boolean,
+    default: false,
+  },
+  metadata: {
+    acceptedAt: {
+      type: Date,
+    },
   },
   createdAt: {
     type: Date,
@@ -57,15 +80,15 @@ const InstituteUserRoleSchema = new Schema<IInstituteUserRole>({
 });
 
 // Pre-save middleware to update the updatedAt timestamp
-InstituteUserRoleSchema.pre('save', function(next) {
+OrganizationUserRoleSchema.pre('save', function(next) {
   this.updatedAt = new Date();
   next();
 });
 
-// Ensure a user can't have multiple active roles in the same institute
-InstituteUserRoleSchema.index(
-  { instituteId: 1, userId: 1, isActive: 1 },
+// Ensure a user can't have multiple active roles in the same organization
+OrganizationUserRoleSchema.index(
+  { organizationId: 1, userId: 1, isActive: 1 },
   { unique: true, partialFilterExpression: { isActive: true } }
 );
 
-export const InstituteUserRole = model<IInstituteUserRole>('InstituteUserRole', InstituteUserRoleSchema);
+export const OrganizationUserRole = model<OrganizationUserRole>('OrganizationUserRole', OrganizationUserRoleSchema);
