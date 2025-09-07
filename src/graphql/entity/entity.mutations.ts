@@ -2,27 +2,88 @@ import { Entity } from '@/models/Entity';
 import { GraphQLContext } from '../context';   
 import { BaseError } from '@/types/errors/base.error';
 import { createError } from '@/middleware/errorHandler';
+import {
+  EntityType,
+  EntityStatus,
+  EntityVisibility,
+  MemberStatus,
+  IEntityMember,
+  IEntityMetadata,
+  IEntitySettings,
+  IEntity,
+} from './entity.interfaces';
+import {
+  ICreateEntityMutationInput,
+  IUpdateEntityMutationInput,
+  IAddEntityMemberMutationInput,
+  IUpdateEntityMemberMutationInput,
+  IRemoveEntityMemberMutationInput,
+  IArchiveEntityMutationInput,
+  IEntityResponse,
+  IEntityMemberResponse,
+} from './entity.interfaces';
+import { EntityMember } from '@/models/EntityMember';
+import { Role } from '@/models/Role';
 
 export const entityMutations = {
   createEntity: async (
     _: any, 
-    { input }: { input: any }, 
-    { isAuthenticated, user }: GraphQLContext
-  ) => {
+    { input }: ICreateEntityMutationInput, 
+    context: GraphQLContext
+  ): Promise<IEntityResponse> => {
     try {
-      if (isAuthenticated) {
+      if (!context.isAuthenticated || !context.user) {
         throw new Error('Not authenticated');
       }
 
       const entity = await Entity.create({
         ...input,
-        createdBy: user?.id,
+        createdBy: context.user.id,
+        status: EntityStatus.ACTIVE,
+        settings: {
+          allowMembershipRequests: true,
+          requireApproval: true,
+          visibility: EntityVisibility.ORGANIZATION,
+          allowPosts: true,
+          allowEvents: true,
+          allowAnnouncements: true,
+          ...input.settings,
+        },
+        metadata: {
+          totalMembers: 0,
+          totalPosts: 0,
+          totalEvents: 0,
+          lastActivityAt: new Date(),
+        },
+      });
+
+      // Find or create the Entity Owner role
+      let role = await Role.findOne({ name: 'Entity Owner' });
+      if (!role) {
+        role = await Role.create({
+          name: 'Entity Owner',
+          description: 'Entity Owner',
+          permissions: [
+            {
+              resource: 'entity',
+              actions: ['create', 'read', 'update', 'delete', 'manage'],
+            },
+          ],
+        });
+      }
+
+      // Create entity member record
+      await EntityMember.create({
+        entityId: entity.entityId,
+        userId: context.user.id,
+        roleId: role.roleId,
+        status: MemberStatus.ACTIVE,
       });
 
       return {
         success: true,
         message: 'Entity created successfully',
-        entity,
+        entity: entity as IEntity,
       };
     } catch (error) {
       if (error instanceof BaseError) {
@@ -36,31 +97,44 @@ export const entityMutations = {
     }
   },
 
-  updateEntity: async (_: any, { entityId, input }: { entityId: string; input: any }, { isAuthenticated, user }: GraphQLContext) => {
+  updateEntity: async (_: any, { id, input }: IUpdateEntityMutationInput, { isAuthenticated, user }: GraphQLContext): Promise<IEntityResponse> => {
     try {
       if (!isAuthenticated) {
         throw new Error('Not authenticated');
       }
 
-      const entity = await Entity.findOne({ entityId });
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      const entity = await Entity.findOne({ entityId: id });
       if (!entity) {
         throw new Error('Entity not found');
       }
 
       // Check if user has permission to update
-      const isMember = entity.members?.some(member => 
-        member.userId === user?.id && 
-        member.status === 'active' &&
-        ['admin', 'moderator'].includes(member.role.toLowerCase())
-      );
+      const entityMember = await EntityMember.findOne({
+        entityId: id,
+        userId: user.id,
+        status: MemberStatus.ACTIVE,
+      }).populate('roleId', 'name');
 
-      if (!isMember) {
+      if (!entityMember || !['admin', 'moderator'].includes(entityMember.roleId.name.toLowerCase())) {
         throw new Error('Permission denied');
       }
 
-      Object.assign(entity, {
+      // Update the entity
+      if (input.settings) {
+        const currentSettings = entity.get('settings') || {};
+        input.settings = {
+          ...currentSettings,
+          ...input.settings,
+        };
+      }
+
+      entity.set({
         ...input,
-        updatedBy: user?.id,
+        updatedBy: user.id,
       });
 
       await entity.save();
@@ -82,27 +156,30 @@ export const entityMutations = {
     }
   },
 
-  addEntityMember: async (_: any, { 
-    entityId, 
-    input 
-  }: { 
-    entityId: string; 
-    input: { userId: string; role: string; } 
-  }, { isAuthenticated, user }: GraphQLContext) => {
+  addEntityMember: async (
+    _: any,
+    { input }: IAddEntityMemberMutationInput,
+    { isAuthenticated, user }: GraphQLContext
+  ): Promise<IEntityMemberResponse> => {
     try {
       if (!isAuthenticated) {
         throw new Error('Not authenticated');
       }
 
-      const entity = await Entity.findOne({ entityId });
+      const entity = await Entity.findOne({ entityId: input.entityId });
       if (!entity) {
         throw new Error('Entity not found');
       }
 
       // Check if user has permission to add members
-      const isAdmin = entity.members?.some(member => 
-        member.userId === user?.id && 
-        member.status === 'active' &&
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      const members = entity.get('members') || [];
+      const isAdmin = members.some(member => 
+        member.userId === user.id && 
+        member.status === MemberStatus.ACTIVE &&
         member.role.toLowerCase() === 'admin'
       );
 
@@ -111,7 +188,7 @@ export const entityMutations = {
       }
 
       // Check if user is already a member
-      if (entity.members?.some(member => member.userId === input.userId)) {
+      if (members.some(member => member.userId === input.userId)) {
         throw new Error('User is already a member');
       }
 
@@ -119,15 +196,22 @@ export const entityMutations = {
         userId: input.userId,
         role: input.role,
         joinedAt: new Date(),
-        status: 'active',
+        status: MemberStatus.ACTIVE,
       };
 
-      entity.members = [...(entity.members || []), newMember];
-      entity.metadata = {
-        ...entity.metadata,
-        totalMembers: (entity.metadata?.totalMembers || 0) + 1,
+      entity.set('members', [...members, newMember]);
+      
+      const metadata = entity.get('metadata') || {
+        totalMembers: 0,
+        totalPosts: 0,
+        totalEvents: 0,
         lastActivityAt: new Date(),
       };
+      entity.set('metadata', {
+        ...metadata,
+        totalMembers: metadata.totalMembers + 1,
+        lastActivityAt: new Date(),
+      } as IEntityMetadata);
 
       await entity.save();
 
@@ -148,15 +232,11 @@ export const entityMutations = {
     }
   },
 
-  updateEntityMember: async (_: any, { 
-    entityId, 
-    userId, 
-    input 
-  }: { 
-    entityId: string; 
-    userId: string;
-    input: { role?: string; status?: string; } 
-  }, { isAuthenticated, user }: GraphQLContext) => {
+  updateEntityMember: async (
+    _: any,
+    { id, input }: IUpdateEntityMemberMutationInput,
+    { isAuthenticated, user }: GraphQLContext
+  ): Promise<IEntityMemberResponse> => {
     try {
       if (!isAuthenticated) {
         throw new Error('Not authenticated');
@@ -170,7 +250,7 @@ export const entityMutations = {
       // Check if user has permission to update members
       const isAdmin = entity.members?.some(member => 
         member.userId === user?.id && 
-        member.status === 'active' &&
+        member.status === MemberStatus.ACTIVE &&
         member.role.toLowerCase() === 'admin'
       );
 
@@ -194,7 +274,7 @@ export const entityMutations = {
       if (input.status && input.status !== entity.members[memberIndex].status) {
         entity.metadata = {
           ...entity.metadata,
-          totalMembers: entity.members.filter(m => m.status === 'active').length,
+          totalMembers: members.filter(m => m.status === MemberStatus.ACTIVE).length,
           lastActivityAt: new Date(),
         };
       }
@@ -218,13 +298,11 @@ export const entityMutations = {
     }
   },
 
-  removeEntityMember: async (_: any, { 
-    entityId, 
-    userId 
-  }: { 
-    entityId: string; 
-    userId: string;
-  }, { isAuthenticated, user }: GraphQLContext) => {
+  removeEntityMember: async (
+    _: any,
+    { id }: IRemoveEntityMemberMutationInput,
+    { isAuthenticated, user }: GraphQLContext
+  ): Promise<IEntityMemberResponse> => {
     try {
       if (!isAuthenticated) {
         throw new Error('Not authenticated');
@@ -238,7 +316,7 @@ export const entityMutations = {
       // Check if user has permission to remove members
       const isAdmin = entity.members?.some(member => 
         member.userId === user?.id && 
-        member.status === 'active' &&
+        member.status === MemberStatus.ACTIVE &&
         member.role.toLowerCase() === 'admin'
       );
 
@@ -254,10 +332,12 @@ export const entityMutations = {
         throw new Error('Member not found');
       }
 
-      entity.members.splice(memberIndex, 1);
+      const members = entity.get('members') || [];
+      members.splice(memberIndex, 1);
+      entity.set('members', members);
       entity.metadata = {
         ...entity.metadata,
-        totalMembers: entity.members.filter(m => m.status === 'active').length,
+        totalMembers: members.filter(m => m.status === MemberStatus.ACTIVE).length,
         lastActivityAt: new Date(),
       };
 
@@ -279,7 +359,11 @@ export const entityMutations = {
     }
   },
 
-  archiveEntity: async (_: any, { entityId }: { entityId: string }, { isAuthenticated, user }: GraphQLContext) => {
+  archiveEntity: async (
+    _: any,
+    { id }: IArchiveEntityMutationInput,
+    { isAuthenticated, user }: GraphQLContext
+  ): Promise<IEntityResponse> => {
     try {
       if (!isAuthenticated) {
         throw new Error('Not authenticated');
@@ -293,7 +377,7 @@ export const entityMutations = {
       // Check if user has permission to archive
       const isAdmin = entity.members?.some(member => 
         member.userId === user?.id && 
-        member.status === 'active' &&
+        member.status === MemberStatus.ACTIVE &&
         member.role.toLowerCase() === 'admin'
       );
 
@@ -301,8 +385,8 @@ export const entityMutations = {
         throw new Error('Permission denied');
       }
 
-      entity.status = 'archived';
-      entity.updatedBy = user?.id;
+      entity.set('status', EntityStatus.ARCHIVED);
+      entity.set('updatedBy', user?.id || '');
       await entity.save();
 
       return {

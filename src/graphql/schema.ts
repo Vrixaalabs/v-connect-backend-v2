@@ -6,6 +6,7 @@ import { sharedTypes } from './shared/shared.types';
 import { organizationTypes } from './organization/organization.types';
 import { superAdminTypes } from './super-admin/super-admin.types';
 import { adminTypes } from './admin/admin.types';
+import { entityTypes } from './entity/entity.types';
 
 // Import resolvers
 import { organizationQueries } from './organization/organization.queries';
@@ -15,6 +16,10 @@ import { superAdminMutations } from './super-admin/super-admin.mutations';
 import { adminQueries } from './admin/admin.queries';
 import { adminMutations } from './admin/admin.mutations';
 import { userTypes } from './user/user.types';
+import { entityQueries } from './entity/entity.queries';
+import { entityMutations } from './entity/entity.mutations';
+
+
 
 const typeDefs = gql`
   type Query {
@@ -31,11 +36,13 @@ const resolvers = {
     ...organizationQueries,
     ...superAdminQueries,
     ...adminQueries,
+    ...entityQueries,
   },
   Mutation: {
     ...organizationMutations,
     ...superAdminMutations,
     ...adminMutations,
+    ...entityMutations,
   },
 };
 
@@ -47,6 +54,7 @@ export const schema = makeExecutableSchema({
     superAdminTypes,
     adminTypes,
     userTypes,
+    entityTypes,
   ],
   resolvers,
 
