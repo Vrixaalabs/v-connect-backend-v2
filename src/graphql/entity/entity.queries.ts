@@ -141,12 +141,10 @@ export const entityQueries = {
       if (!context.isAuthenticated || !context.user) {
         throw createError.authentication('Not authenticated');
       }
-      console.log(context.user.id);
 
       const memberEntities = await EntityMember.find({ userId: context.user.id })
         .lean()
         .exec();
-      console.log('Member Entities:', memberEntities);
 
      const entities = await Entity.find({ entityId: { $in: memberEntities.map(me => me.entityId) } })
         .lean()
