@@ -1,17 +1,17 @@
 import { FriendConnection, FriendProfile } from '@/models';
-import { Context } from '../context';
+import { GraphQLContext } from '../context';
 
 export const networkQueries = {
-  getFriendConnections: async (_: any, { page = 1, limit = 10, status }: { page: number; limit: number; status?: string }, context: Context) => {
+  getFriendConnections: async (_: any, { page = 1, limit = 10, status }: { page: number; limit: number; status?: string }, { isAuthenticated, user }: GraphQLContext) => {
     try {
-      if (!context.isAuthenticated) {
+      if (!isAuthenticated) {
         throw new Error('Not authenticated');
       }
 
       const query = {
         $or: [
-          { userId: context.userId },
-          { friendId: context.userId }
+          { userId: user?.id },
+          { friendId: user?.id }
         ]
       };
 

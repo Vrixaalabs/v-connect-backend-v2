@@ -1,22 +1,33 @@
-import { Entity } from '@/models';
-import { Context } from '../context';
+import { Entity } from '@/models/Entity';
+import { EntityMember } from '@/models/EntityMember';
+import { User } from '@/models/User';
+import { Role } from '@/models/Role';
+import { GraphQLContext } from '../context';
+import { createError } from '@/middleware/errorHandler';
+import { BaseError } from '@/types/errors/base.error';
+import {
+  IGetEntitiesInput,
+  IGetEntityInput,
+  IGetEntityMembersInput,
+  IGetEntityStatsInput,
+  IEntitiesResponse,
+  IEntityResponse,
+  IEntityMembersResponse,
+  IEntityStatsResponse,
+  IEntityMember,
+  IEntity,
+  EntityVisibility,
+  MemberStatus,
+} from './entity.interfaces';
 
 export const entityQueries = {
-  getEntities: async (_: any, { 
-    organizationId, 
-    type, 
-    status,
-    page = 1, 
-    limit = 10 
-  }: { 
-    organizationId: string;
-    type?: string;
-    status?: string;
-    page: number;
-    limit: number;
-  }, context: Context) => {
+  getEntities: async (
+    _: any,
+    { organizationId, type, status, page = 1, limit = 10 }: IGetEntitiesInput,
+    { isAuthenticated, user }: GraphQLContext
+  ): Promise<IEntitiesResponse> => {
     try {
-      if (!context.isAuthenticated) {
+      if (!isAuthenticated) {
         throw new Error('Not authenticated');
       }
 
@@ -43,80 +54,160 @@ export const entityQueries = {
       return {
         success: true,
         message: 'Entities retrieved successfully',
-        entities,
+        entities: entities as IEntity[],
         total,
         page,
         limit,
         totalPages,
       };
     } catch (error) {
-      return {
-        success: false,
-        message: error.message,
-        entities: [],
-        total: 0,
-        page,
-        limit,
-        totalPages: 0,
-      };
+      if (error instanceof BaseError) {
+        throw error;
+      }
+      throw createError.database('Failed to get entities', {
+        operation: 'getEntities',
+        entityType: 'Entity',
+        error,
+      });
     }
   },
 
-  getEntity: async (_: any, { entityId }: { entityId: string }, context: Context) => {
+  // getEntityById: async (
+  //   _: any,
+  //   { entityId }: IGetEntityInput,
+  //   { isAuthenticated, user }: GraphQLContext
+  // ): Promise<IEntityResponse> => {
+  //   try {
+  //     if (!isAuthenticated) {
+  //       throw new Error('Not authenticated');
+  //     }
+
+  //     const memberEntities = await EntityMember.find({ entityId })
+  //       .lean()
+  //       .exec();
+
+  //     const [entities, users, roles] = await Promise.all([
+  //       Entity.find({ entityId: { $in: memberEntities.map(me => me.entityId) } }).lean().exec(),
+  //       User.find({ userId: { $in: memberEntities.map(me => me.userId) } }).lean().exec(),
+  //       Role.find({ roleId: { $in: memberEntities.map(me => me.roleId) } }).lean().exec()
+  //     ]);
+
+  //     // Create a map for quick lookups
+  //     const userMap = new Map(users.map(user => [user.userId, user]));
+  //     const roleMap = new Map(roles.map(role => [role.roleId, role]));
+
+  //     // Combine the data
+  //     const enrichedEntities = entities.map(entity => {
+  //       const memberEntity = memberEntities.find(me => me.entityId === entity.entityId);
+  //       return {
+  //         ...entity,
+  //         member: {
+  //           user: memberEntity?.userId ? userMap.get(memberEntity.userId) : null,
+  //           role: memberEntity?.roleId ? roleMap.get(memberEntity.roleId) : null,
+  //           joinedAt: memberEntity?.joinedAt,
+  //           status: memberEntity?.status
+  //         }
+  //       };
+  //     });
+  //     console.log(enrichedEntities);
+
+  //     return {
+  //       success: true,
+  //       message: 'Entities retrieved successfully',
+  //       entity: enrichedEntities as IEntity,
+  //       total: enrichedEntities.length,
+  //       page: 1,
+  //       limit: enrichedEntities.length,
+  //       totalPages: 1,
+  //     };
+  //   } catch (error) {
+  //     if (error instanceof BaseError) {
+  //       throw error;
+  //     }
+  //     throw createError.database('Failed to get entity by ID', {
+  //       operation: 'getEntityById',
+  //       entityType: 'Entity',
+  //       error,
+  //     });
+  //   }
+  // },
+
+  getEntityByEntityId: async (
+    _: any,
+    { entityId }: IGetEntityInput,
+    context: GraphQLContext
+  ): Promise<IEntityResponse> => {
     try {
-      if (!context.isAuthenticated) {
-        throw new Error('Not authenticated');
+      if (!context.isAuthenticated || !context.user) {
+        throw createError.authentication('Not authenticated');
       }
 
-      const entity = await Entity.findOne({ entityId })
-        .populate('createdBy', 'firstName lastName')
-        .populate('updatedBy', 'firstName lastName')
-        .populate('members.userId', 'firstName lastName avatar');
-
-      if (!entity) {
-        throw new Error('Entity not found');
-      }
-
-      // Check visibility permissions
-      if (entity.settings.visibility === 'private') {
-        const isMember = entity.members?.some(member => 
-          member.userId === context.userId && member.status === 'active'
-        );
-
-        if (!isMember) {
-          throw new Error('Access denied');
-        }
-      }
+      const entity = await Entity.findOne({ entityId });
 
       return {
         success: true,
         message: 'Entity retrieved successfully',
-        entity,
+        entity: entity as IEntity,
       };
     } catch (error) {
-      return {
-        success: false,
-        message: error.message,
-        entity: null,
-      };
+      if (error instanceof BaseError) {
+        throw error;
+      }
+      throw createError.database('Failed to get entity by entityId', {
+        operation: 'getEntityByEntityId',
+        entityType: 'Entity',
+        error,
+      });
     }
   },
 
-  getEntityMembers: async (_: any, { 
-    entityId,
-    status,
-    role,
-    page = 1,
-    limit = 10
-  }: {
-    entityId: string;
-    status?: string;
-    role?: string;
-    page: number;
-    limit: number;
-  }, context: Context) => {
+  getUserEntities: async (
+    _: any,
+    __: any,
+    context: GraphQLContext
+  ): Promise<IEntitiesResponse> => {
     try {
-      if (!context.isAuthenticated) {
+      if (!context.isAuthenticated || !context.user) {
+        throw createError.authentication('Not authenticated');
+      }
+
+      const memberEntities = await EntityMember.find({ userId: context.user.id })
+        .lean()
+        .exec();
+
+     const entities = await Entity.find({ entityId: { $in: memberEntities.map(me => me.entityId) } })
+        .lean()
+        .exec();
+
+      return {
+        success: true,
+        message: 'Entities retrieved successfully',
+        entities: entities as IEntity[],
+        total: entities.length,
+        page: 1,
+        limit: entities.length,
+        totalPages: 1,
+      };
+    }
+  catch (error) {
+      if (error instanceof BaseError) {
+        throw error;
+      }
+      throw createError.database('Failed to get user entities', {
+        operation: 'getUserEntities',
+        entityType: 'EntityMembers',
+        error,
+      });
+    }
+  },
+
+  getEntityMembers: async (
+    _: any,
+    { entityId, status, role, page = 1, limit = 10 }: IGetEntityMembersInput,
+    { isAuthenticated, user }: GraphQLContext
+  ): Promise<IEntityMembersResponse> => {
+    try {
+      if (!isAuthenticated) {
         throw new Error('Not authenticated');
       }
 
@@ -125,30 +216,37 @@ export const entityQueries = {
         throw new Error('Entity not found');
       }
 
-      let members = entity.members || [];
+      const entityMembers = entity.get('members') || [];
+      let filteredMembers = [...entityMembers];
 
       if (status) {
-        members = members.filter(member => member.status === status.toLowerCase());
+        filteredMembers = filteredMembers.filter((member: IEntityMember) => 
+          member.status === (status.toUpperCase() as MemberStatus)
+        );
       }
 
       if (role) {
-        members = members.filter(member => member.role === role);
+        filteredMembers = filteredMembers.filter((member: IEntityMember) => 
+          member.role === role
+        );
       }
 
-      const total = members.length;
+      const total = filteredMembers.length;
       const totalPages = Math.ceil(total / limit);
-      const paginatedMembers = members.slice((page - 1) * limit, page * limit);
+      const paginatedMembers = filteredMembers.slice((page - 1) * limit, page * limit);
 
-      // Populate user details
-      const populatedMembers = await Entity.populate(paginatedMembers, {
-        path: 'userId',
-        select: 'firstName lastName avatar email',
-      });
+      // Convert to IEntityMember array
+      const members: IEntityMember[] = paginatedMembers.map(member => ({
+        userId: member.userId,
+        role: member.role,
+        joinedAt: member.joinedAt,
+        status: member.status as MemberStatus,
+      }));
 
       return {
         success: true,
         message: 'Members retrieved successfully',
-        members: populatedMembers,
+        members,
         total,
         page,
         limit,
@@ -157,7 +255,7 @@ export const entityQueries = {
     } catch (error) {
       return {
         success: false,
-        message: error.message,
+        message: error instanceof Error ? error.message : 'An unknown error occurred',
         members: [],
         total: 0,
         page,
@@ -167,9 +265,13 @@ export const entityQueries = {
     }
   },
 
-  getEntityStats: async (_: any, { organizationId }: { organizationId: string }, context: Context) => {
+  getEntityStats: async (
+    _: any,
+    { organizationId }: IGetEntityStatsInput,
+    { isAuthenticated, user }: GraphQLContext
+  ): Promise<IEntityStatsResponse> => {
     try {
-      if (!context.isAuthenticated) {
+      if (!isAuthenticated) {
         throw new Error('Not authenticated');
       }
 
@@ -204,11 +306,11 @@ export const entityQueries = {
 
       const stats = {
         totalEntities,
-        entitiesByType: entitiesByType.map(item => ({
+        entitiesByType: entitiesByType.map((item: any) => ({
           type: item._id,
           count: item.count
         })),
-        entitiesByStatus: entitiesByStatus.map(item => ({
+        entitiesByStatus: entitiesByStatus.map((item: any) => ({
           status: item._id,
           count: item.count
         })),
@@ -225,7 +327,7 @@ export const entityQueries = {
     } catch (error) {
       return {
         success: false,
-        message: error.message,
+        message: error instanceof Error ? error.message : 'An unknown error occurred',
         stats: {
           totalEntities: 0,
           entitiesByType: [],

@@ -1,27 +1,27 @@
 export const entityTypes = `#graphql
   type Entity {
-    entityId: ID!
+    entityId: String!
     name: String!
     type: EntityType!
+    code: String
     description: String
-    organizationId: ID!
-    parentEntityId: ID
+    organizationId: String
+    parentEntityId: String
     status: EntityStatus!
     logo: String
     banner: String
-    members: [EntityMember!]
     settings: EntitySettings!
     metadata: EntityMetadata
-    createdBy: ID!
-    updatedBy: ID
-    createdAt: DateTime!
-    updatedAt: DateTime!
+    createdBy: String!
+    updatedBy: String
+    createdAt: String!
+    updatedAt: String!
   }
 
   type EntityMember {
-    userId: ID!
+    userId: String!
     role: String!
-    joinedAt: DateTime!
+    joinedAt: String!
     status: MemberStatus!
   }
 
@@ -38,7 +38,7 @@ export const entityTypes = `#graphql
     totalMembers: Int!
     totalPosts: Int!
     totalEvents: Int!
-    lastActivityAt: DateTime
+    lastActivityAt: String
   }
 
   enum EntityType {
@@ -69,7 +69,8 @@ export const entityTypes = `#graphql
     name: String!
     type: EntityType!
     description: String
-    organizationId: ID!
+    organizationId: ID
+    code: String
     parentEntityId: ID
     logo: String
     banner: String
@@ -96,7 +97,7 @@ export const entityTypes = `#graphql
   }
 
   input AddEntityMemberInput {
-    userId: ID!
+    userId: String!
     role: String!
   }
 
@@ -146,6 +147,11 @@ export const entityTypes = `#graphql
     averageMembersPerEntity: Float!
   }
 
+  input CreateEntityMemberInput {
+    userId: String!
+    role: String!
+  }
+
   type EntityTypeCount {
     type: EntityType!
     count: Int!
@@ -160,5 +166,25 @@ export const entityTypes = `#graphql
     success: Boolean!
     message: String!
     stats: EntityStats!
+  }
+
+  extend type Query {
+    getUserEntities: EntitiesResponse
+    getEntityStats(organizationId: String!): EntityStatsResponse
+    getEntities(organizationId: String!, type: String, status: String, page: Int!, limit: Int!): EntitiesResponse
+    getEntityByEntityId(entityId: String!): EntityResponse
+    getEntityMembers(entityId: String!, status: String, role: String, page: Int!, limit: Int!): EntityMembersResponse
+  }
+
+  extend type Mutation {
+    createEntity(input: CreateEntityInput!): EntityResponse
+    updateEntity(id: ID!, input: UpdateEntityInput!): EntityResponse
+    deleteEntity(id: ID!): EntityResponse
+    addEntityMember(input: AddEntityMemberInput!): EntityMemberResponse
+    updateEntityMember(id: ID!, input: UpdateEntityMemberInput!): EntityMemberResponse
+    removeEntityMember(id: ID!): EntityMemberResponse
+    deleteEntityMember(id: ID!): EntityMemberResponse
+    createEntityMember(input: CreateEntityMemberInput!): EntityMemberResponse
+    archiveEntity(id: ID!): EntityResponse
   }
 `;

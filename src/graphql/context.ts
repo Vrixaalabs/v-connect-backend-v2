@@ -41,8 +41,6 @@ export async function context({
       userId: string;
       role: string;
     };
-    console.log("decoded token from context");
-    console.log(decoded);
 
     // if (decoded.type !== 'access') {
     //       return {
@@ -56,12 +54,12 @@ export async function context({
     const user = await User.findOne({ userId: decoded.userId });
 
     if (!user) {
-          return {
-      user: null,
-      isAuthenticated: false,
-      isSuperAdmin: false,
-      req,
-    };
+      return {
+        user: null,
+        isAuthenticated: false,
+        isSuperAdmin: false,
+        req,
+      };
     }
 
     return {

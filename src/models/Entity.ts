@@ -1,36 +1,27 @@
 import mongoose, { Document, Schema } from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
+import {
+  EntityType,
+  EntityStatus,
+  EntityVisibility,
+  IEntitySettings,
+  IEntityMetadata,
+  IEntityMember,
+} from '@/graphql/entity/entity.interfaces';
 
 export interface IEntity extends Document {
   entityId: string;
   name: string;
-  type: 'club' | 'department' | 'committee' | 'team';
+  type: EntityType;
   description?: string;
-  organizationId: string;
+  code?: string;
+  organizationId?: string;
   parentEntityId?: string;
-  status: 'active' | 'inactive' | 'archived';
+  status: EntityStatus;
   logo?: string;
   banner?: string;
-  members?: {
-    userId: string;
-    role: string;
-    joinedAt: Date;
-    status: 'active' | 'inactive';
-  }[];
-  settings?: {
-    allowMembershipRequests: boolean;
-    requireApproval: boolean;
-    visibility: 'public' | 'private' | 'organization';
-    allowPosts: boolean;
-    allowEvents: boolean;
-    allowAnnouncements: boolean;
-  };
-  metadata?: {
-    totalMembers: number;
-    totalPosts: number;
-    totalEvents: number;
-    lastActivityAt?: Date;
-  };
+  settings: IEntitySettings;
+  metadata?: IEntityMetadata;
   createdBy: string;
   updatedBy?: string;
   createdAt: Date;
@@ -52,16 +43,20 @@ const entitySchema = new Schema<IEntity>(
     },
     type: {
       type: String,
-      enum: ['club', 'department', 'committee', 'team'],
+      enum: Object.values(EntityType),
       required: true,
     },
     description: {
       type: String,
       trim: true,
     },
+    code: {
+      type: String,
+      required: false,
+    },
     organizationId: {
       type: String,
-      required: true,
+      required: false,
       ref: 'Organization',
       refPath: 'organizationId',
     },
@@ -72,8 +67,8 @@ const entitySchema = new Schema<IEntity>(
     },
     status: {
       type: String,
-      enum: ['active', 'inactive', 'archived'],
-      default: 'active',
+      enum: Object.values(EntityStatus),
+      default: EntityStatus.ACTIVE,
     },
     logo: {
       type: String,
@@ -81,27 +76,6 @@ const entitySchema = new Schema<IEntity>(
     banner: {
       type: String,
     },
-    members: [{
-      userId: {
-        type: String,
-        required: true,
-        ref: 'User',
-        refPath: 'userId',
-      },
-      role: {
-        type: String,
-        required: true,
-      },
-      joinedAt: {
-        type: Date,
-        default: Date.now,
-      },
-      status: {
-        type: String,
-        enum: ['active', 'inactive'],
-        default: 'active',
-      },
-    }],
     settings: {
       allowMembershipRequests: {
         type: Boolean,
@@ -113,8 +87,8 @@ const entitySchema = new Schema<IEntity>(
       },
       visibility: {
         type: String,
-        enum: ['public', 'private', 'organization'],
-        default: 'organization',
+        enum: Object.values(EntityVisibility),
+        default: EntityVisibility.ORGANIZATION,
       },
       allowPosts: {
         type: Boolean,
@@ -164,16 +138,15 @@ const entitySchema = new Schema<IEntity>(
 );
 
 // Create indexes for better query performance
-entitySchema.index({ organizationId: 1, type: 1 });
-entitySchema.index({ parentEntityId: 1 });
-entitySchema.index({ 'members.userId': 1 });
-entitySchema.index({ status: 1 });
+// entitySchema.index({ organizationId: 1, type: 1 });
+// entitySchema.index({ parentEntityId: 1 });
 
 // Prevent circular parent references
-entitySchema.pre('save', async function(next) {
-  if (this.parentEntityId) {
-    let currentParent = this.parentEntityId;
-    const visited = new Set([this.entityId]);
+entitySchema.pre('save', async function(this: IEntity & { _id: any }, next) {
+  const parentId = this.get('parentEntityId');
+  if (parentId) {
+    let currentParent = parentId;
+    const visited = new Set([this.get('entityId')]);
 
     while (currentParent) {
       if (visited.has(currentParent)) {
@@ -183,22 +156,22 @@ entitySchema.pre('save', async function(next) {
       visited.add(currentParent);
 
       const parent = await Entity.findOne({ entityId: currentParent }, 'parentEntityId');
-      currentParent = parent?.parentEntityId || '';
+      currentParent = parent?.get('parentEntityId') || '';
     }
   }
   next();
 });
 
 // Update metadata
-entitySchema.pre('save', function(next) {
-  if (this.members) {
-    this.metadata = {
-      ...this.metadata,
-      totalPosts: this.metadata?.totalPosts || 0,
-      totalEvents: this.metadata?.totalEvents || 0,
-      totalMembers: this.members.filter(m => m.status === 'active').length,
+entitySchema.pre('save', function(this: IEntity & { _id: any }, next) {
+  const metadata = this.get('metadata');
+  if (metadata) {
+    this.set('metadata', {
+      totalMembers: metadata.totalMembers || 0,
+      totalPosts: metadata.totalPosts || 0,
+      totalEvents: metadata.totalEvents || 0,
       lastActivityAt: new Date(),
-    };
+    });
   }
   next();
 });
