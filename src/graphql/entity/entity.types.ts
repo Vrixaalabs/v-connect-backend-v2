@@ -172,7 +172,7 @@ export const entityTypes = `#graphql
     getUserEntities: EntitiesResponse
     getEntityStats(organizationId: String!): EntityStatsResponse
     getEntities(organizationId: String!, type: String, status: String, page: Int!, limit: Int!): EntitiesResponse
-    getEntityById(entityId: String!): EntityResponse
+    getEntityByEntityId(entityId: String!): EntityResponse
     getEntityMembers(entityId: String!, status: String, role: String, page: Int!, limit: Int!): EntityMembersResponse
   }
 

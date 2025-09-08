@@ -72,60 +72,89 @@ export const entityQueries = {
     }
   },
 
-  getEntityById: async (
+  // getEntityById: async (
+  //   _: any,
+  //   { entityId }: IGetEntityInput,
+  //   { isAuthenticated, user }: GraphQLContext
+  // ): Promise<IEntityResponse> => {
+  //   try {
+  //     if (!isAuthenticated) {
+  //       throw new Error('Not authenticated');
+  //     }
+
+  //     const memberEntities = await EntityMember.find({ entityId })
+  //       .lean()
+  //       .exec();
+
+  //     const [entities, users, roles] = await Promise.all([
+  //       Entity.find({ entityId: { $in: memberEntities.map(me => me.entityId) } }).lean().exec(),
+  //       User.find({ userId: { $in: memberEntities.map(me => me.userId) } }).lean().exec(),
+  //       Role.find({ roleId: { $in: memberEntities.map(me => me.roleId) } }).lean().exec()
+  //     ]);
+
+  //     // Create a map for quick lookups
+  //     const userMap = new Map(users.map(user => [user.userId, user]));
+  //     const roleMap = new Map(roles.map(role => [role.roleId, role]));
+
+  //     // Combine the data
+  //     const enrichedEntities = entities.map(entity => {
+  //       const memberEntity = memberEntities.find(me => me.entityId === entity.entityId);
+  //       return {
+  //         ...entity,
+  //         member: {
+  //           user: memberEntity?.userId ? userMap.get(memberEntity.userId) : null,
+  //           role: memberEntity?.roleId ? roleMap.get(memberEntity.roleId) : null,
+  //           joinedAt: memberEntity?.joinedAt,
+  //           status: memberEntity?.status
+  //         }
+  //       };
+  //     });
+  //     console.log(enrichedEntities);
+
+  //     return {
+  //       success: true,
+  //       message: 'Entities retrieved successfully',
+  //       entity: enrichedEntities as IEntity,
+  //       total: enrichedEntities.length,
+  //       page: 1,
+  //       limit: enrichedEntities.length,
+  //       totalPages: 1,
+  //     };
+  //   } catch (error) {
+  //     if (error instanceof BaseError) {
+  //       throw error;
+  //     }
+  //     throw createError.database('Failed to get entity by ID', {
+  //       operation: 'getEntityById',
+  //       entityType: 'Entity',
+  //       error,
+  //     });
+  //   }
+  // },
+
+  getEntityByEntityId: async (
     _: any,
     { entityId }: IGetEntityInput,
-    { isAuthenticated, user }: GraphQLContext
+    context: GraphQLContext
   ): Promise<IEntityResponse> => {
     try {
-      if (!isAuthenticated) {
-        throw new Error('Not authenticated');
+      if (!context.isAuthenticated || !context.user) {
+        throw createError.authentication('Not authenticated');
       }
 
-      const memberEntities = await EntityMember.find({ entityId })
-        .lean()
-        .exec();
-
-      const [entities, users, roles] = await Promise.all([
-        Entity.find({ entityId: { $in: memberEntities.map(me => me.entityId) } }).lean().exec(),
-        User.find({ userId: { $in: memberEntities.map(me => me.userId) } }).lean().exec(),
-        Role.find({ roleId: { $in: memberEntities.map(me => me.roleId) } }).lean().exec()
-      ]);
-
-      // Create a map for quick lookups
-      const userMap = new Map(users.map(user => [user.userId, user]));
-      const roleMap = new Map(roles.map(role => [role.roleId, role]));
-
-      // Combine the data
-      const enrichedEntities = entities.map(entity => {
-        const memberEntity = memberEntities.find(me => me.entityId === entity.entityId);
-        return {
-          ...entity,
-          member: {
-            user: memberEntity?.userId ? userMap.get(memberEntity.userId) : null,
-            role: memberEntity?.roleId ? roleMap.get(memberEntity.roleId) : null,
-            joinedAt: memberEntity?.joinedAt,
-            status: memberEntity?.status
-          }
-        };
-      });
-      console.log(enrichedEntities);
+      const entity = await Entity.findOne({ entityId });
 
       return {
         success: true,
-        message: 'Entities retrieved successfully',
-        entity: enrichedEntities as IEntity,
-        total: enrichedEntities.length,
-        page: 1,
-        limit: enrichedEntities.length,
-        totalPages: 1,
+        message: 'Entity retrieved successfully',
+        entity: entity as IEntity,
       };
     } catch (error) {
       if (error instanceof BaseError) {
         throw error;
       }
-      throw createError.database('Failed to get entity by ID', {
-        operation: 'getEntityById',
+      throw createError.database('Failed to get entity by entityId', {
+        operation: 'getEntityByEntityId',
         entityType: 'Entity',
         error,
       });
