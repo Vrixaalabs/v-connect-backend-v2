@@ -57,4 +57,7 @@ entityMemberSchema.index({ entityId: 1, userId: 1 }, { unique: true });
 entityMemberSchema.index({ userId: 1 });
 entityMemberSchema.index({ roleId: 1 });
 
-export const EntityMember = mongoose.model<IEntityMember>('EntityMember', entityMemberSchema);
+export const EntityMember = mongoose.model<IEntityMember>(
+  'EntityMember',
+  entityMemberSchema
+);

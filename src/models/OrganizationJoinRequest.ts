@@ -77,9 +77,13 @@ const OrganizationJoinRequestSchema = new Schema<OrganizationJoinRequest>({
 });
 
 // Pre-save middleware to update the updatedAt timestamp
-OrganizationJoinRequestSchema.pre('save', function(next) {
+OrganizationJoinRequestSchema.pre('save', function (next) {
   this.updatedAt = new Date();
   next();
 });
 
-export const OrganizationJoinRequest = model<OrganizationJoinRequest>('OrganizationJoinRequest', OrganizationJoinRequestSchema);
+// eslint-disable-next-line
+export const OrganizationJoinRequest = model<OrganizationJoinRequest>(
+  'OrganizationJoinRequest',
+  OrganizationJoinRequestSchema
+);

@@ -39,10 +39,12 @@ const OrganizationRoleSchema = new Schema<IOrganizationRole>({
     type: String,
     required: true,
   },
-  permissions: [{
-    type: String,
-    required: true,
-  }],
+  permissions: [
+    {
+      type: String,
+      required: true,
+    },
+  ],
   isDefault: {
     type: Boolean,
     default: false,
@@ -64,7 +66,7 @@ const OrganizationRoleSchema = new Schema<IOrganizationRole>({
 });
 
 // Pre-save middleware to update the updatedAt timestamp
-OrganizationRoleSchema.pre('save', function(next) {
+OrganizationRoleSchema.pre('save', function (next) {
   this.updatedAt = new Date();
   next();
 });
@@ -72,4 +74,7 @@ OrganizationRoleSchema.pre('save', function(next) {
 // Ensure unique role names per organization
 OrganizationRoleSchema.index({ organizationId: 1, name: 1 }, { unique: true });
 
-export const OrganizationRole = model<IOrganizationRole>('OrganizationRole', OrganizationRoleSchema);
+export const OrganizationRole = model<IOrganizationRole>(
+  'OrganizationRole',
+  OrganizationRoleSchema
+);

@@ -123,10 +123,15 @@ export const superAdminTypes = gql`
     # Profile mutations
     updateSuperAdminProfile(input: UpdateSuperAdminProfileInput!): UserResponse!
     updateSuperAdminPassword(input: UpdatePasswordInput!): BasicResponse!
-    updateSuperAdminSettings(input: UpdateSuperAdminSettingsInput!): SuperAdminSettingsResponse!
+    updateSuperAdminSettings(
+      input: UpdateSuperAdminSettingsInput!
+    ): SuperAdminSettingsResponse!
     # Institute management mutations
     createOrganization(input: CreateOrganizationInput!): OrganizationResponse!
-    updateOrganization(organizationId: ID!, input: UpdateOrganizationInput!): OrganizationResponse!
+    updateOrganization(
+      organizationId: ID!
+      input: UpdateOrganizationInput!
+    ): OrganizationResponse!
     deleteOrganization(organizationId: ID!): OrganizationResponse!
 
     # Admin management mutations

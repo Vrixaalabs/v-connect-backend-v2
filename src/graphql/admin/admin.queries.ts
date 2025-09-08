@@ -6,7 +6,12 @@ import { BaseError } from '../../types/errors/base.error';
 export const adminQueries = {
   getJoinRequests: async (
     _: unknown,
-    { organizationId, status, page = 1, limit = 10 }: { organizationId: string; status?: string; page: number; limit: number },
+    {
+      organizationId,
+      status,
+      page = 1,
+      limit = 10,
+    }: { organizationId: string; status?: string; page: number; limit: number },
     { isAuthenticated }: GraphQLContext
   ) => {
     try {
@@ -14,7 +19,9 @@ export const adminQueries = {
         throw createError.authentication('Not authenticated');
       }
 
-      const query: any = { organizationId };
+      const query: { organizationId: string; status?: string } = {
+        organizationId,
+      };
       if (status) {
         query.status = status;
       }
@@ -58,10 +65,13 @@ export const adminQueries = {
 
       const request = await OrganizationJoinRequest.findOne({ requestId });
       if (!request) {
-        throw createError.notFound(`Join request with ID ${requestId} not found`, {
-          entityType: 'OrganizationJoinRequest',
-          entityId: requestId,
-        });
+        throw createError.notFound(
+          `Join request with ID ${requestId} not found`,
+          {
+            entityType: 'OrganizationJoinRequest',
+            entityId: requestId,
+          }
+        );
       }
 
       return {

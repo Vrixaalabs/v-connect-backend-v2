@@ -1,10 +1,13 @@
 import { FriendConnection } from '@/models/FriendConnection';
-import { FriendProfile } from '@/models/FriendProfile';
-import { GraphQLContext } from '../context';    
+import { FriendProfile, IFriendProfile } from '@/models/FriendProfile';
+import { GraphQLContext } from '../context';
 
 export const networkMutations = {
   createFriendConnection: async (
-    _: any, { input }: { input: { friendId: string } }, context: GraphQLContext) => {
+    _: unknown,
+    { input }: { input: { friendId: string } },
+    context: GraphQLContext
+  ) => {
     try {
       if (!context.isAuthenticated) {
         throw new Error('Not authenticated');
@@ -13,9 +16,9 @@ export const networkMutations = {
       // Check if connection already exists
       const existingConnection = await FriendConnection.findOne({
         $or: [
-          { userId: context.userId, friendId: input.friendId },
-          { userId: input.friendId, friendId: context.userId }
-        ]
+          { userId: context.user?.id, friendId: input.friendId },
+          { userId: input.friendId, friendId: context.user?.id },
+        ],
       });
 
       if (existingConnection) {
@@ -24,10 +27,10 @@ export const networkMutations = {
 
       // Create new connection
       const connection = await FriendConnection.create({
-        userId: context.userId,
+        userId: context.user?.id,
         friendId: input.friendId,
         status: 'pending',
-        initiatedBy: context.userId,
+        initiatedBy: context.user?.id,
       });
 
       return {
@@ -38,13 +41,20 @@ export const networkMutations = {
     } catch (error) {
       return {
         success: false,
-        message: error.message,
+        message: error instanceof Error ? error.message : 'Unknown error',
         connection: null,
       };
     }
   },
 
-  updateFriendConnection: async (_: any, { connectionId, input }: { connectionId: string; input: { status: string } }, context: Context) => {
+  updateFriendConnection: async (
+    _: unknown,
+    {
+      connectionId,
+      input,
+    }: { connectionId: string; input: { status: string } },
+    context: GraphQLContext
+  ) => {
     try {
       if (!context.isAuthenticated) {
         throw new Error('Not authenticated');
@@ -52,18 +62,22 @@ export const networkMutations = {
 
       const connection = await FriendConnection.findOne({
         connectionId,
-        friendId: context.userId,
-        status: 'pending'
+        friendId: context.user?.id,
+        status: 'pending',
       });
 
       if (!connection) {
         throw new Error('Connection not found or already processed');
       }
 
-      connection.status = input.status.toLowerCase();
-      
+      connection.status = input.status.toLowerCase() as
+        | 'pending'
+        | 'accepted'
+        | 'rejected'
+        | 'blocked';
+
       if (input.status === 'blocked') {
-        connection.blockedBy = context.userId;
+        connection.blockedBy = context.user?.id || '';
         connection.blockedAt = new Date();
       }
 
@@ -77,24 +91,27 @@ export const networkMutations = {
     } catch (error) {
       return {
         success: false,
-        message: error.message,
+        message: error instanceof Error ? error.message : 'Unknown error',
         connection: null,
       };
     }
   },
 
-  updateFriendProfile: async (_: any, { input }: { input: any }, context: Context) => {
+  updateFriendProfile: async (
+    _: unknown,
+    { input }: { input: IFriendProfile },
+    context: GraphQLContext
+  ) => {
     try {
       if (!context.isAuthenticated) {
         throw new Error('Not authenticated');
       }
 
-      let profile = await FriendProfile.findOne({ userId: context.userId });
+      let profile = await FriendProfile.findOne({ userId: context.user?.id });
 
       if (!profile) {
         // Create new profile if it doesn't exist
         profile = await FriendProfile.create({
-          userId: context.userId,
           ...input,
         });
       } else {
@@ -111,13 +128,17 @@ export const networkMutations = {
     } catch (error) {
       return {
         success: false,
-        message: error.message,
+        message: error instanceof Error ? error.message : 'Unknown error',
         profile: null,
       };
     }
   },
 
-  removeFriendConnection: async (_: any, { connectionId }: { connectionId: string }, context: Context) => {
+  removeFriendConnection: async (
+    _: unknown,
+    { connectionId }: { connectionId: string },
+    context: GraphQLContext
+  ) => {
     try {
       if (!context.isAuthenticated) {
         throw new Error('Not authenticated');
@@ -125,10 +146,7 @@ export const networkMutations = {
 
       const connection = await FriendConnection.findOne({
         connectionId,
-        $or: [
-          { userId: context.userId },
-          { friendId: context.userId }
-        ]
+        $or: [{ userId: context.user?.id }, { friendId: context.user?.id }],
       });
 
       if (!connection) {
@@ -144,12 +162,16 @@ export const networkMutations = {
     } catch (error) {
       return {
         success: false,
-        message: error.message,
+        message: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   },
 
-  blockUser: async (_: any, { userId }: { userId: string }, context: Context) => {
+  blockUser: async (
+    _: unknown,
+    { userId }: { userId: string },
+    context: GraphQLContext
+  ) => {
     try {
       if (!context.isAuthenticated) {
         throw new Error('Not authenticated');
@@ -157,25 +179,25 @@ export const networkMutations = {
 
       let connection = await FriendConnection.findOne({
         $or: [
-          { userId: context.userId, friendId: userId },
-          { userId: userId, friendId: context.userId }
-        ]
+          { userId: context.user?.id, friendId: userId },
+          { userId: userId, friendId: context.user?.id },
+        ],
       });
 
       if (!connection) {
         // Create new blocked connection if none exists
         connection = await FriendConnection.create({
-          userId: context.userId,
+          userId: context.user?.id,
           friendId: userId,
           status: 'blocked',
-          initiatedBy: context.userId,
-          blockedBy: context.userId,
+          initiatedBy: context.user?.id,
+          blockedBy: context.user?.id || '',
           blockedAt: new Date(),
         });
       } else {
         // Update existing connection to blocked
         connection.status = 'blocked';
-        connection.blockedBy = context.userId;
+        connection.blockedBy = context.user?.id || '';
         connection.blockedAt = new Date();
         await connection.save();
       }
@@ -188,13 +210,17 @@ export const networkMutations = {
     } catch (error) {
       return {
         success: false,
-        message: error.message,
+        message: error instanceof Error ? error.message : 'Unknown error',
         connection: null,
       };
     }
   },
 
-  unblockUser: async (_: any, { userId }: { userId: string }, context: Context) => {
+  unblockUser: async (
+    _: unknown,
+    { userId }: { userId: string },
+    context: GraphQLContext
+  ) => {
     try {
       if (!context.isAuthenticated) {
         throw new Error('Not authenticated');
@@ -202,11 +228,11 @@ export const networkMutations = {
 
       const connection = await FriendConnection.findOne({
         $or: [
-          { userId: context.userId, friendId: userId },
-          { userId: userId, friendId: context.userId }
+          { userId: context.user?.id, friendId: userId },
+          { userId: userId, friendId: context.user?.id },
         ],
         status: 'blocked',
-        blockedBy: context.userId
+        blockedBy: context.user?.id,
       });
 
       if (!connection) {
@@ -222,7 +248,7 @@ export const networkMutations = {
     } catch (error) {
       return {
         success: false,
-        message: error.message,
+        message: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   },

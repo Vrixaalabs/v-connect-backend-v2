@@ -80,7 +80,7 @@ const OrganizationUserRoleSchema = new Schema<OrganizationUserRole>({
 });
 
 // Pre-save middleware to update the updatedAt timestamp
-OrganizationUserRoleSchema.pre('save', function(next) {
+OrganizationUserRoleSchema.pre('save', function (next) {
   this.updatedAt = new Date();
   next();
 });
@@ -91,4 +91,8 @@ OrganizationUserRoleSchema.index(
   { unique: true, partialFilterExpression: { isActive: true } }
 );
 
-export const OrganizationUserRole = model<OrganizationUserRole>('OrganizationUserRole', OrganizationUserRoleSchema);
+// eslint-disable-next-line
+export const OrganizationUserRole = model<OrganizationUserRole>(
+  'OrganizationUserRole',
+  OrganizationUserRoleSchema
+);

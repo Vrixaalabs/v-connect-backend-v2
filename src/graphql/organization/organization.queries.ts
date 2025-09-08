@@ -1,11 +1,7 @@
 import { GraphQLContext } from '../context';
 import { createError } from '../../middleware/errorHandler';
-import { Institute } from '../../models/Institute';
 import { OrganizationRole } from '../../models/OrganizationRole';
-import { OrganizationJoinRequest } from '../../models/OrganizationJoinRequest';
-import { OrganizationUserRole } from '../../models/OrganizationUserRole';
-import { 
-  OrganizationFilterInput,
+import {
   SearchOrganizationsArgs,
   GetOrganizationBySlugArgs,
   GetOrganizationByIdArgs,
@@ -30,6 +26,7 @@ export const organizationQueries = {
         throw createError.authentication('Not authenticated');
       }
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const query: any = {};
       if (filter) {
         if (filter.name) {
@@ -123,10 +120,13 @@ export const organizationQueries = {
 
       const organization = await Organization.findOne({ organizationId });
       if (!organization) {
-        throw createError.notFound(`Organization with ID ${organizationId} not found`, {
-          entityType: 'Organization',
-          entityId: organizationId,
-        });
+        throw createError.notFound(
+          `Organization with ID ${organizationId} not found`,
+          {
+            entityType: 'Organization',
+            entityId: organizationId,
+          }
+        );
       }
 
       return {

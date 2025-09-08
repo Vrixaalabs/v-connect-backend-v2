@@ -5,9 +5,6 @@ import { OrganizationUserRole } from '../../models/OrganizationUserRole';
 import { User } from '../../models/User';
 import { BaseError } from '../../types/errors/base.error';
 import {
-  SuperAdminDashboardStats,
-  RecentActivity,
-  SystemStatus,
   GetRecentActivitiesArgs,
   DashboardStatsResponse,
   RecentActivitiesResponse,
@@ -27,27 +24,25 @@ export const superAdminQueries = {
   ): Promise<DashboardStatsResponse> => {
     try {
       if (!isAuthenticated || !isSuperAdmin) {
-        throw createError.authorization('Not authorized to access super admin dashboard');
+        throw createError.authorization(
+          'Not authorized to access super admin dashboard'
+        );
       }
 
-      const [
-        totalInstitutes,
-        totalStudents,
-        totalDepartments,
-        activeAdmins,
-      ] = await Promise.all([
-        Institute.countDocuments({ isActive: true }),
-        Institute.aggregate([
-          { $match: { isActive: true } },
-          { $group: { _id: null, total: { $sum: '$studentsCount' } } },
-        ]).then(result => result[0]?.total || 0),
-        Institute.aggregate([
-          { $match: { isActive: true } },
-          { $project: { departmentCount: { $size: '$departments' } } },
-          { $group: { _id: null, total: { $sum: '$departmentCount' } } },
-        ]).then(result => result[0]?.total || 0),
-        OrganizationUserRole.countDocuments({ isActive: true }),
-      ]);
+      const [totalInstitutes, totalStudents, totalDepartments, activeAdmins] =
+        await Promise.all([
+          Institute.countDocuments({ isActive: true }),
+          Institute.aggregate([
+            { $match: { isActive: true } },
+            { $group: { _id: null, total: { $sum: '$studentsCount' } } },
+          ]).then(result => result[0]?.total || 0),
+          Institute.aggregate([
+            { $match: { isActive: true } },
+            { $project: { departmentCount: { $size: '$departments' } } },
+            { $group: { _id: null, total: { $sum: '$departmentCount' } } },
+          ]).then(result => result[0]?.total || 0),
+          OrganizationUserRole.countDocuments({ isActive: true }),
+        ]);
 
       return {
         success: true,
@@ -57,16 +52,19 @@ export const superAdminQueries = {
           totalStudents,
           totalDepartments,
           activeAdmins,
-        }
+        },
       };
     } catch (error) {
       if (error instanceof BaseError) {
         throw error;
       }
-      throw createError.database('Failed to fetch super admin dashboard stats', {
-        operation: 'getSuperAdminDashboardStats',
-        error,
-      });
+      throw createError.database(
+        'Failed to fetch super admin dashboard stats',
+        {
+          operation: 'getSuperAdminDashboardStats',
+          error,
+        }
+      );
     }
   },
 
@@ -77,7 +75,9 @@ export const superAdminQueries = {
   ): Promise<RecentActivitiesResponse> => {
     try {
       if (!isAuthenticated || !isSuperAdmin) {
-        throw createError.authorization('Not authorized to access super admin activities');
+        throw createError.authorization(
+          'Not authorized to access super admin activities'
+        );
       }
 
       // For now, we'll combine recent activities from different sources
@@ -86,24 +86,28 @@ export const superAdminQueries = {
         Organization.find()
           .sort({ createdAt: -1 })
           .limit(limit)
-          .then(organizations => organizations.map(organization => ({
-            id: organization.organizationId,
-            type: 'organization_added',
-            message: `New organization "${organization.name}" was added`,
-            time: organization.createdAt.toISOString(),
-            instituteId: organization.organizationId,
-          }))),
+          .then(organizations =>
+            organizations.map(organization => ({
+              id: organization.organizationId,
+              type: 'organization_added',
+              message: `New organization "${organization.name}" was added`,
+              time: organization.createdAt.toISOString(),
+              instituteId: organization.organizationId,
+            }))
+          ),
         OrganizationUserRole.find()
           .sort({ createdAt: -1 })
           .limit(limit)
-          .then(roles => roles.map(role => ({
-            id: role.assignmentId,
-            type: 'admin_assigned',
-            message: `New admin assigned to organization`,
-            time: role.createdAt.toISOString(),
-            instituteId: role.organizationId,
-            userId: role.userId,
-          }))),
+          .then(roles =>
+            roles.map(role => ({
+              id: role.assignmentId,
+              type: 'admin_assigned',
+              message: `New admin assigned to organization`,
+              time: role.createdAt.toISOString(),
+              instituteId: role.organizationId,
+              userId: role.userId,
+            }))
+          ),
       ]);
 
       const allActivities = [...newOrganizations, ...newAdmins]
@@ -113,7 +117,7 @@ export const superAdminQueries = {
       return {
         success: true,
         message: 'Recent activities fetched successfully',
-        activities: allActivities
+        activities: allActivities,
       };
     } catch (error) {
       if (error instanceof BaseError) {
@@ -133,7 +137,9 @@ export const superAdminQueries = {
   ): Promise<SystemStatusResponse> => {
     try {
       if (!isAuthenticated || !isSuperAdmin) {
-        throw createError.authorization('Not authorized to access system status');
+        throw createError.authorization(
+          'Not authorized to access system status'
+        );
       }
 
       // In a real implementation, you would get this from your monitoring system
@@ -145,7 +151,7 @@ export const superAdminQueries = {
           status: 'operational',
           load: 0.25, // 25% system load
           lastUpdated: new Date().toISOString(),
-        }
+        },
       };
     } catch (error) {
       if (error instanceof BaseError) {
@@ -169,9 +175,12 @@ export const superAdminQueries = {
       }
 
       if (!isSuperAdmin) {
-        throw createError.authorization('Only super admin can view all organization admins');
+        throw createError.authorization(
+          'Only super admin can view all organization admins'
+        );
       }
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const query: any = {};
       if (search) {
         query['userId'] = { $regex: search, $options: 'i' };
@@ -215,7 +224,9 @@ export const superAdminQueries = {
       }
 
       if (!isSuperAdmin) {
-        throw createError.authorization('Only super admin can access these settings');
+        throw createError.authorization(
+          'Only super admin can access these settings'
+        );
       }
 
       // Get settings from user document or a separate settings collection
@@ -229,12 +240,12 @@ export const superAdminQueries = {
         throw createError.notFound('Settings not found');
       }
 
-      const { twoFactorCode, ...userSettings } = settings.settings;
+      const { ...userSettings } = settings.settings;
 
       return {
         success: true,
         message: 'Settings fetched successfully',
-        settings: userSettings
+        settings: userSettings,
       };
     } catch (error) {
       if (error instanceof BaseError) {
@@ -251,17 +262,21 @@ export const superAdminQueries = {
     _: unknown,
     { adminId }: { adminId: string },
     { isAuthenticated, isSuperAdmin }: GraphQLContext
-  ): Promise<OrganizationAdminResponse>=> {
+  ): Promise<OrganizationAdminResponse> => {
     try {
       if (!isAuthenticated) {
         throw createError.authentication('Not authenticated');
       }
 
       if (!isSuperAdmin) {
-        throw createError.authorization('Only super admin can view organization admin details');
+        throw createError.authorization(
+          'Only super admin can view organization admin details'
+        );
       }
 
-      const admin = await OrganizationUserRole.findOne({ assignmentId: adminId }).populate('roleId');
+      const admin = await OrganizationUserRole.findOne({
+        assignmentId: adminId,
+      }).populate('roleId');
       if (!admin) {
         throw createError.notFound(`Admin with ID ${adminId} not found`, {
           entityType: 'OrganizationUserRole',

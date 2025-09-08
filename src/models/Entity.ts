@@ -6,7 +6,6 @@ import {
   EntityVisibility,
   IEntitySettings,
   IEntityMetadata,
-  IEntityMember,
 } from '@/graphql/entity/entity.interfaces';
 
 export interface IEntity extends Document {
@@ -142,38 +141,47 @@ const entitySchema = new Schema<IEntity>(
 // entitySchema.index({ parentEntityId: 1 });
 
 // Prevent circular parent references
-entitySchema.pre('save', async function(this: IEntity & { _id: any }, next) {
-  const parentId = this.get('parentEntityId');
-  if (parentId) {
-    let currentParent = parentId;
-    const visited = new Set([this.get('entityId')]);
+entitySchema.pre(
+  'save',
+  async function (this: IEntity & { _id: mongoose.Types.ObjectId }, next) {
+    const parentId = this.get('parentEntityId');
+    if (parentId) {
+      let currentParent = parentId;
+      const visited = new Set([this.get('entityId')]);
 
-    while (currentParent) {
-      if (visited.has(currentParent)) {
-        const err = new Error('Circular parent reference detected');
-        return next(err);
+      while (currentParent) {
+        if (visited.has(currentParent)) {
+          const err = new Error('Circular parent reference detected');
+          return next(err);
+        }
+        visited.add(currentParent);
+
+        const parent = await Entity.findOne(
+          { entityId: currentParent },
+          'parentEntityId'
+        );
+        currentParent = parent?.get('parentEntityId') || '';
       }
-      visited.add(currentParent);
-
-      const parent = await Entity.findOne({ entityId: currentParent }, 'parentEntityId');
-      currentParent = parent?.get('parentEntityId') || '';
     }
+    next();
   }
-  next();
-});
+);
 
 // Update metadata
-entitySchema.pre('save', function(this: IEntity & { _id: any }, next) {
-  const metadata = this.get('metadata');
-  if (metadata) {
-    this.set('metadata', {
-      totalMembers: metadata.totalMembers || 0,
-      totalPosts: metadata.totalPosts || 0,
-      totalEvents: metadata.totalEvents || 0,
-      lastActivityAt: new Date(),
-    });
+entitySchema.pre(
+  'save',
+  function (this: IEntity & { _id: mongoose.Types.ObjectId }, next) {
+    const metadata = this.get('metadata');
+    if (metadata) {
+      this.set('metadata', {
+        totalMembers: metadata.totalMembers || 0,
+        totalPosts: metadata.totalPosts || 0,
+        totalEvents: metadata.totalEvents || 0,
+        lastActivityAt: new Date(),
+      });
+    }
+    next();
   }
-  next();
-});
+);
 
 export const Entity = mongoose.model<IEntity>('Entity', entitySchema);

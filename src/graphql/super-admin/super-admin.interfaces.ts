@@ -1,5 +1,4 @@
 import { Document } from 'mongoose';
-import { IUser } from '../../models/User';
 import { IOrganization } from '../../models/Organization';
 import { OrganizationUserRole } from '../../models/OrganizationUserRole';
 

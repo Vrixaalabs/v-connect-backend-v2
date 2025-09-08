@@ -19,8 +19,6 @@ import { userTypes } from './user/user.types';
 import { entityQueries } from './entity/entity.queries';
 import { entityMutations } from './entity/entity.mutations';
 
-
-
 const typeDefs = gql`
   type Query {
     _empty: String
@@ -57,5 +55,4 @@ export const schema = makeExecutableSchema({
     entityTypes,
   ],
   resolvers,
-
 });

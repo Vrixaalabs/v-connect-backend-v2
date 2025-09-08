@@ -1,7 +1,5 @@
 import { Entity } from '@/models/Entity';
 import { EntityMember } from '@/models/EntityMember';
-import { User } from '@/models/User';
-import { Role } from '@/models/Role';
 import { GraphQLContext } from '../context';
 import { createError } from '@/middleware/errorHandler';
 import { BaseError } from '@/types/errors/base.error';
@@ -16,22 +14,26 @@ import {
   IEntityStatsResponse,
   IEntityMember,
   IEntity,
-  EntityVisibility,
   MemberStatus,
+  IEntityStatusCount,
+  IEntityTypeCount,
 } from './entity.interfaces';
 
 export const entityQueries = {
   getEntities: async (
-    _: any,
+    _: unknown,
     { organizationId, type, status, page = 1, limit = 10 }: IGetEntitiesInput,
-    { isAuthenticated, user }: GraphQLContext
+    { isAuthenticated }: GraphQLContext
   ): Promise<IEntitiesResponse> => {
     try {
       if (!isAuthenticated) {
         throw new Error('Not authenticated');
       }
 
-      const query: any = { organizationId };
+      const query: { organizationId: string; type?: string; status?: string } =
+        {
+          organizationId: organizationId || '',
+        };
 
       if (type) {
         query.type = type.toUpperCase();
@@ -133,7 +135,7 @@ export const entityQueries = {
   // },
 
   getEntityByEntityId: async (
-    _: any,
+    _: unknown,
     { entityId }: IGetEntityInput,
     context: GraphQLContext
   ): Promise<IEntityResponse> => {
@@ -162,8 +164,8 @@ export const entityQueries = {
   },
 
   getUserEntities: async (
-    _: any,
-    __: any,
+    _: unknown,
+    __: unknown,
     context: GraphQLContext
   ): Promise<IEntitiesResponse> => {
     try {
@@ -171,11 +173,16 @@ export const entityQueries = {
         throw createError.authentication('Not authenticated');
       }
 
-      const memberEntities = await EntityMember.find({ userId: context.user.id })
+      const memberEntities = await EntityMember.find({
+        userId: context.user.id,
+      })
         .lean()
         .exec();
 
-     const entities = await Entity.find({ entityId: { $in: memberEntities.map(me => me.entityId) } })
+      const entities = await Entity.find({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        entityId: { $in: memberEntities.map((me: any) => me.entityId) },
+      })
         .lean()
         .exec();
 
@@ -188,8 +195,7 @@ export const entityQueries = {
         limit: entities.length,
         totalPages: 1,
       };
-    }
-  catch (error) {
+    } catch (error) {
       if (error instanceof BaseError) {
         throw error;
       }
@@ -202,9 +208,9 @@ export const entityQueries = {
   },
 
   getEntityMembers: async (
-    _: any,
+    _: unknown,
     { entityId, status, role, page = 1, limit = 10 }: IGetEntityMembersInput,
-    { isAuthenticated, user }: GraphQLContext
+    { isAuthenticated }: GraphQLContext
   ): Promise<IEntityMembersResponse> => {
     try {
       if (!isAuthenticated) {
@@ -220,28 +226,33 @@ export const entityQueries = {
       let filteredMembers = [...entityMembers];
 
       if (status) {
-        filteredMembers = filteredMembers.filter((member: IEntityMember) => 
-          member.status === (status.toUpperCase() as MemberStatus)
-        );
+        filteredMembers = filteredMembers.filter(
+          (member: IEntityMember) => member.status === status.toUpperCase()
+        ) as IEntityMember[];
       }
 
       if (role) {
-        filteredMembers = filteredMembers.filter((member: IEntityMember) => 
-          member.role === role
-        );
+        filteredMembers = filteredMembers.filter(
+          (member: IEntityMember) => member.role === role.toUpperCase()
+        ) as IEntityMember[];
       }
 
       const total = filteredMembers.length;
       const totalPages = Math.ceil(total / limit);
-      const paginatedMembers = filteredMembers.slice((page - 1) * limit, page * limit);
+      const paginatedMembers = filteredMembers.slice(
+        (page - 1) * limit,
+        page * limit
+      );
 
       // Convert to IEntityMember array
-      const members: IEntityMember[] = paginatedMembers.map(member => ({
-        userId: member.userId,
-        role: member.role,
-        joinedAt: member.joinedAt,
-        status: member.status as MemberStatus,
-      }));
+      const members: IEntityMember[] = paginatedMembers.map(
+        (member: IEntityMember) => ({
+          userId: member.userId,
+          role: member.role,
+          joinedAt: member.joinedAt,
+          status: member.status as MemberStatus,
+        })
+      );
 
       return {
         success: true,
@@ -255,7 +266,8 @@ export const entityQueries = {
     } catch (error) {
       return {
         success: false,
-        message: error instanceof Error ? error.message : 'An unknown error occurred',
+        message:
+          error instanceof Error ? error.message : 'An unknown error occurred',
         members: [],
         total: 0,
         page,
@@ -266,9 +278,9 @@ export const entityQueries = {
   },
 
   getEntityStats: async (
-    _: any,
+    _: unknown,
     { organizationId }: IGetEntityStatsInput,
-    { isAuthenticated, user }: GraphQLContext
+    { isAuthenticated }: GraphQLContext
   ): Promise<IEntityStatsResponse> => {
     try {
       if (!isAuthenticated) {
@@ -280,43 +292,48 @@ export const entityQueries = {
         entitiesByType,
         entitiesByStatus,
         totalMembers,
-        activeMembers
+        activeMembers,
       ] = await Promise.all([
-        Entity.countDocuments({ organizationId }),
+        Entity.countDocuments({ organizationId: organizationId || '' }),
         Entity.aggregate([
-          { $match: { organizationId } },
-          { $group: { _id: '$type', count: { $sum: 1 } } }
+          { $match: { organizationId: organizationId || '' } },
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          { $group: { _id: '$type' as any, count: { $sum: 1 } } },
         ]),
         Entity.aggregate([
           { $match: { organizationId } },
-          { $group: { _id: '$status', count: { $sum: 1 } } }
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          { $group: { _id: '$status' as any, count: { $sum: 1 } } },
         ]),
         Entity.aggregate([
           { $match: { organizationId } },
           { $unwind: '$members' },
-          { $group: { _id: null, total: { $sum: 1 } } }
+          { $group: { _id: null, total: { $sum: 1 } } },
         ]),
         Entity.aggregate([
-          { $match: { organizationId } },
+          { $match: { organizationId: organizationId || '' } },
           { $unwind: '$members' },
-          { $match: { 'members.status': 'active' } },
-          { $group: { _id: null, total: { $sum: 1 } } }
-        ])
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          { $match: { 'members.status': 'active' as any } },
+          { $group: { _id: null, total: { $sum: 1 } } },
+        ]),
       ]);
 
       const stats = {
         totalEntities,
-        entitiesByType: entitiesByType.map((item: any) => ({
-          type: item._id,
-          count: item.count
+        entitiesByType: entitiesByType.map((item: IEntityTypeCount) => ({
+          type: item.type,
+          count: item.count,
         })),
-        entitiesByStatus: entitiesByStatus.map((item: any) => ({
-          status: item._id,
-          count: item.count
+        entitiesByStatus: entitiesByStatus.map((item: IEntityStatusCount) => ({
+          status: item.status,
+          count: item.count,
         })),
         totalMembers: totalMembers[0]?.total || 0,
         activeMembers: activeMembers[0]?.total || 0,
-        averageMembersPerEntity: totalEntities ? (totalMembers[0]?.total || 0) / totalEntities : 0
+        averageMembersPerEntity: totalEntities
+          ? (totalMembers[0]?.total || 0) / totalEntities
+          : 0,
       };
 
       return {
@@ -327,15 +344,16 @@ export const entityQueries = {
     } catch (error) {
       return {
         success: false,
-        message: error instanceof Error ? error.message : 'An unknown error occurred',
+        message:
+          error instanceof Error ? error.message : 'An unknown error occurred',
         stats: {
           totalEntities: 0,
           entitiesByType: [],
           entitiesByStatus: [],
           totalMembers: 0,
           activeMembers: 0,
-          averageMembersPerEntity: 0
-        }
+          averageMembersPerEntity: 0,
+        },
       };
     }
   },

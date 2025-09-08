@@ -16,7 +16,7 @@ export interface IActivityRequest extends Document {
   category: ActivityCategory;
   createdByUserId: string; // references User.userId
   responses: string[]; // array of userIds
-  responseLimit: number;  
+  responseLimit: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -27,7 +27,16 @@ const activityRequestSchema = new Schema<IActivityRequest>(
     description: { type: String, required: true, maxlength: 4000 },
     category: {
       type: String,
-      enum: ['DRAMA', 'MUSIC', 'SHOOTING', 'ENTREPRENEURSHIP', 'SPORTS', 'DANCE', 'INDOOR GAMES', 'OTHER'],
+      enum: [
+        'DRAMA',
+        'MUSIC',
+        'SHOOTING',
+        'ENTREPRENEURSHIP',
+        'SPORTS',
+        'DANCE',
+        'INDOOR GAMES',
+        'OTHER',
+      ],
       default: 'OTHER',
       index: true,
     },

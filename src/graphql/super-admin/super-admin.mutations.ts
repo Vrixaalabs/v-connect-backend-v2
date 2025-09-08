@@ -6,22 +6,16 @@ import { OrganizationUserRole } from '../../models/OrganizationUserRole';
 import { OrganizationJoinRequest } from '../../models/OrganizationJoinRequest';
 import { User } from '../../models/User';
 import { BaseError } from '../../types/errors/base.error';
-import { CreateOrganizationInput, UpdateOrganizationInput } from '../organization/organization.interfaces';
+import { CreateOrganizationInput } from '../organization/organization.interfaces';
 import { compare, hash } from 'bcryptjs';
 import { sign, SignOptions } from 'jsonwebtoken';
 import { config } from '../../config/app.config';
 import {
   SuperAdminLoginInput,
-  SuperAdmin2FAInput,
-  UpdateSuperAdminProfileInput,
-  UpdatePasswordInput,
-  UpdateSuperAdminSettingsInput,
   SuperAdminAuthResponse,
   BaseResponse,
   UserResponse,
   SuperAdminSettingsResponse,
-  OrganizationResponse,
-  OrganizationAdminResponse,
   AssignAdminInput,
   RemoveAdminArgs,
   UpdatePasswordArgs,
@@ -37,24 +31,16 @@ export const superAdminMutations = {
     { email, password }: SuperAdminLoginInput
   ): Promise<SuperAdminAuthResponse> => {
     try {
-      console.log('Login attempt for email:', email);
-      console.log('Provided password:', password);
-
       const user = await User.findOne({ email, role: 'super_admin' });
-      console.log('Found user:', user ? 'Yes' : 'No');
-      
+
       if (!user) {
         throw createError.authentication('Invalid credentials');
       }
 
-      console.log('Stored hashed password:', user.password);
-      
       // Try both the model method and direct comparison
       const isValidModel = await user.comparePassword(password);
-      console.log('isValidModel:', isValidModel);
-      
+
       const isValidDirect = await compare(password, user.password);
-      console.log('isValidDirect:', isValidDirect);
 
       if (!isValidModel && !isValidDirect) {
         throw createError.authentication('Invalid credentials');
@@ -95,11 +81,10 @@ export const superAdminMutations = {
           role: user.role,
           status: user.status,
           createdAt: user.createdAt,
-          updatedAt: user.updatedAt
+          updatedAt: user.updatedAt,
         },
       };
     } catch (error) {
-      console.error('Login failed', error);
       if (error instanceof BaseError) {
         throw error;
       }
@@ -112,8 +97,8 @@ export const superAdminMutations = {
     { email, code }: SuperAdmin2FAArgs
   ): Promise<SuperAdminAuthResponse> => {
     try {
-      const user = await User.findOne({ 
-        email, 
+      const user = await User.findOne({
+        email,
         role: 'super_admin',
         'settings.twoFactorCode': code,
       });
@@ -148,7 +133,7 @@ export const superAdminMutations = {
           role: user.role,
           status: user.status,
           createdAt: user.createdAt,
-          updatedAt: user.updatedAt
+          updatedAt: user.updatedAt,
         },
       };
     } catch (error) {
@@ -214,7 +199,7 @@ export const superAdminMutations = {
           role: updatedUser.role,
           status: updatedUser.status,
           createdAt: updatedUser.createdAt,
-          updatedAt: updatedUser.updatedAt
+          updatedAt: updatedUser.updatedAt,
         },
       };
     } catch (error) {
@@ -240,7 +225,10 @@ export const superAdminMutations = {
         throw createError.notFound('User not found');
       }
 
-      const isValid = await compare(input.currentPassword, currentUser.password);
+      const isValid = await compare(
+        input.currentPassword,
+        currentUser.password
+      );
       if (!isValid) {
         throw createError.authentication('Current password is incorrect');
       }
@@ -287,7 +275,7 @@ export const superAdminMutations = {
         throw createError.notFound('Settings not found');
       }
 
-      const { twoFactorCode, ...settings } = updatedUser.settings;
+      const { ...settings } = updatedUser.settings;
 
       return {
         success: true,
@@ -312,7 +300,9 @@ export const superAdminMutations = {
       }
 
       if (!isSuperAdmin) {
-        throw createError.authorization('Only super admin can create institutes');
+        throw createError.authorization(
+          'Only super admin can create institutes'
+        );
       }
 
       // handle the university name to make it slug
@@ -329,7 +319,12 @@ export const superAdminMutations = {
         {
           name: 'Admin',
           description: 'Organization administrator with full access',
-          permissions: ['MANAGE_ROLES', 'MANAGE_USERS', 'MANAGE_DEPARTMENTS', 'MANAGE_REQUESTS'],
+          permissions: [
+            'MANAGE_ROLES',
+            'MANAGE_USERS',
+            'MANAGE_DEPARTMENTS',
+            'MANAGE_REQUESTS',
+          ],
           isDefault: true,
         },
         {
@@ -384,7 +379,9 @@ export const superAdminMutations = {
       }
 
       if (!isSuperAdmin) {
-        throw createError.authorization('Only super admin can update organizations');
+        throw createError.authorization(
+          'Only super admin can update organizations'
+        );
       }
 
       const organization = await Organization.findOneAndUpdate(
@@ -394,10 +391,13 @@ export const superAdminMutations = {
       );
 
       if (!organization) {
-        throw createError.notFound(`Organization with ID ${organizationId} not found`, {
-          entityType: 'Organization',
-          entityId: organizationId,
-        });
+        throw createError.notFound(
+          `Organization with ID ${organizationId} not found`,
+          {
+            entityType: 'Organization',
+            entityId: organizationId,
+          }
+        );
       }
 
       return {
@@ -429,15 +429,22 @@ export const superAdminMutations = {
       }
 
       if (!isSuperAdmin) {
-        throw createError.authorization('Only super admin can delete organizations');
+        throw createError.authorization(
+          'Only super admin can delete organizations'
+        );
       }
 
-      const organization = await Organization.findOneAndDelete({ organizationId });
+      const organization = await Organization.findOneAndDelete({
+        organizationId,
+      });
       if (!organization) {
-        throw createError.notFound(`Organization with ID ${organizationId} not found`, {
-          entityType: 'Organization',
-          entityId: organizationId,
-        });
+        throw createError.notFound(
+          `Organization with ID ${organizationId} not found`,
+          {
+            entityType: 'Organization',
+            entityId: organizationId,
+          }
+        );
       }
 
       // Delete related data
@@ -476,7 +483,9 @@ export const superAdminMutations = {
       }
 
       if (!isSuperAdmin) {
-        throw createError.authorization('Only super admin can assign organization admins');
+        throw createError.authorization(
+          'Only super admin can assign organization admins'
+        );
       }
 
       // Find user by email
@@ -489,12 +498,17 @@ export const superAdminMutations = {
       }
 
       // Find institute
-      const organization = await Organization.findOne({ organizationId: input.organizationId });
+      const organization = await Organization.findOne({
+        organizationId: input.organizationId,
+      });
       if (!organization) {
-        throw createError.notFound(`Organization with ID ${input.organizationId} not found`, {
-          entityType: 'Organization',
-          entityId: input.organizationId,
-        });
+        throw createError.notFound(
+          `Organization with ID ${input.organizationId} not found`,
+          {
+            entityType: 'Organization',
+            entityId: input.organizationId,
+          }
+        );
       }
 
       // Find admin role
@@ -504,15 +518,22 @@ export const superAdminMutations = {
       });
 
       if (!adminRole) {
-        throw createError.notFound(`Admin role not found for organization ${input.organizationId}`, {
-          entityType: 'OrganizationRole',
-          organizationId: input.organizationId,
-        });
+        throw createError.notFound(
+          `Admin role not found for organization ${input.organizationId}`,
+          {
+            entityType: 'OrganizationRole',
+            organizationId: input.organizationId,
+          }
+        );
       }
 
       // Deactivate any existing active roles
       await OrganizationUserRole.updateMany(
-        { organizationId: input.organizationId, userId: targetUser.userId, isActive: true },
+        {
+          organizationId: input.organizationId,
+          userId: targetUser.userId,
+          isActive: true,
+        },
         { $set: { isActive: false } }
       );
 
@@ -553,10 +574,14 @@ export const superAdminMutations = {
       }
 
       if (!isSuperAdmin) {
-        throw createError.authorization('Only super admin can remove organization admins');
+        throw createError.authorization(
+          'Only super admin can remove organization admins'
+        );
       }
 
-      const admin = await OrganizationUserRole.findOne({ assignmentId: adminId });
+      const admin = await OrganizationUserRole.findOne({
+        assignmentId: adminId,
+      });
       if (!admin) {
         throw createError.notFound(`Admin with ID ${adminId} not found`, {
           entityType: 'OrganizationUserRole',

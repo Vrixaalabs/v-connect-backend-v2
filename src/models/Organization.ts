@@ -1,7 +1,5 @@
-import bcrypt from 'bcryptjs';
 import mongoose, { Document, Schema } from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
-import { config } from '../config/app.config';
 
 export interface IOrganization extends Document {
   organizationId: string;
@@ -106,4 +104,7 @@ const organizationSchema = new Schema<IOrganization>({
   },
 });
 
-export const Organization = mongoose.model<IOrganization>('Organization', organizationSchema);
+export const Organization = mongoose.model<IOrganization>(
+  'Organization',
+  organizationSchema
+);

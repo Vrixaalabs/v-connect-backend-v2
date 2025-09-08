@@ -5,11 +5,6 @@ import { OrganizationRole } from '../../models/OrganizationRole';
 import { OrganizationUserRole } from '../../models/OrganizationUserRole';
 import { OrganizationJoinRequest } from '../../models/OrganizationJoinRequest';
 import {
-  CreateOrganizationInput,
-  UpdateOrganizationInput,
-  CreateOrganizationRoleInput,
-  UpdateOrganizationRoleInput,
-  CreateJoinRequestInput,
   FollowOrganizationArgs,
   UnfollowOrganizationArgs,
   CreateOrganizationRoleArgs,
@@ -20,17 +15,15 @@ import {
   CreateJoinRequestArgs,
   OrganizationResponse,
   OrganizationRoleResponse,
-  JoinRequestResponse
+  JoinRequestResponse,
 } from './organization.interfaces';
 import { BaseError } from '../../types/errors/base.error';
-
-import { User } from '../../models/User';
 
 export const organizationMutations = {
   followOrganization: async (
     _: unknown,
     { organizationId }: FollowOrganizationArgs,
-    { isAuthenticated, isSuperAdmin, user }: GraphQLContext
+    { isAuthenticated, user }: GraphQLContext
   ): Promise<OrganizationResponse> => {
     try {
       if (!isAuthenticated) {
@@ -44,10 +37,13 @@ export const organizationMutations = {
       );
 
       if (!organization) {
-        throw createError.notFound(`Organization with ID ${organizationId} not found`, {
-          entityType: 'Organization',
-          entityId: organizationId,
-        });
+        throw createError.notFound(
+          `Organization with ID ${organizationId} not found`,
+          {
+            entityType: 'Organization',
+            entityId: organizationId,
+          }
+        );
       }
 
       return {
@@ -71,7 +67,7 @@ export const organizationMutations = {
   unfollowOrganization: async (
     _: unknown,
     { organizationId }: UnfollowOrganizationArgs,
-    { isAuthenticated, isSuperAdmin, user }: GraphQLContext
+    { isAuthenticated, user }: GraphQLContext
   ): Promise<OrganizationResponse> => {
     try {
       if (!isAuthenticated) {
@@ -85,10 +81,13 @@ export const organizationMutations = {
       );
 
       if (!organization) {
-        throw createError.notFound(`Organization with ID ${organizationId} not found`, {
-          entityType: 'Organization',
-          entityId: organizationId,
-        });
+        throw createError.notFound(
+          `Organization with ID ${organizationId} not found`,
+          {
+            entityType: 'Organization',
+            entityId: organizationId,
+          }
+        );
       }
 
       return {
@@ -112,7 +111,7 @@ export const organizationMutations = {
   createOrganizationRole: async (
     _: unknown,
     { organizationId, input }: CreateOrganizationRoleArgs,
-    { isAuthenticated, isSuperAdmin, user }: GraphQLContext
+    { isAuthenticated, user }: GraphQLContext
   ): Promise<OrganizationRoleResponse> => {
     try {
       if (!isAuthenticated) {
@@ -146,7 +145,7 @@ export const organizationMutations = {
   updateOrganizationRole: async (
     _: unknown,
     { roleId, input }: UpdateOrganizationRoleArgs,
-    { isAuthenticated, isSuperAdmin }: GraphQLContext
+    { isAuthenticated }: GraphQLContext
   ): Promise<OrganizationRoleResponse> => {
     try {
       if (!isAuthenticated) {
@@ -187,7 +186,7 @@ export const organizationMutations = {
   deleteOrganizationRole: async (
     _: unknown,
     { roleId }: DeleteOrganizationRoleArgs,
-    { isAuthenticated, isSuperAdmin }: GraphQLContext
+    { isAuthenticated }: GraphQLContext
   ): Promise<OrganizationRoleResponse> => {
     try {
       if (!isAuthenticated) {
@@ -231,8 +230,13 @@ export const organizationMutations = {
 
   assignOrganizationRole: async (
     _: unknown,
-    { organizationId, userId, roleId, departmentId }: AssignOrganizationRoleArgs,
-    { isAuthenticated, isSuperAdmin, user }: GraphQLContext
+    {
+      organizationId,
+      userId,
+      roleId,
+      departmentId,
+    }: AssignOrganizationRoleArgs,
+    { isAuthenticated, user }: GraphQLContext
   ): Promise<OrganizationRoleResponse> => {
     try {
       if (!isAuthenticated) {
@@ -246,7 +250,7 @@ export const organizationMutations = {
       );
 
       // Create new role assignment
-      const userRole = await OrganizationUserRole.create({
+      await OrganizationUserRole.create({
         organizationId,
         userId: user?.id,
         roleId,
@@ -284,8 +288,8 @@ export const organizationMutations = {
 
   removeOrganizationRole: async (
     _: unknown,
-    { organizationId, userId }: RemoveOrganizationRoleArgs, 
-    { isAuthenticated, isSuperAdmin }: GraphQLContext
+    { organizationId, userId }: RemoveOrganizationRoleArgs,
+    { isAuthenticated }: GraphQLContext
   ): Promise<OrganizationRoleResponse> => {
     try {
       if (!isAuthenticated) {
@@ -317,7 +321,7 @@ export const organizationMutations = {
   createJoinRequest: async (
     _: unknown,
     { input }: CreateJoinRequestArgs,
-    { isAuthenticated, isSuperAdmin, user }: GraphQLContext
+    { isAuthenticated, user }: GraphQLContext
   ): Promise<JoinRequestResponse> => {
     try {
       if (!isAuthenticated) {
@@ -332,9 +336,12 @@ export const organizationMutations = {
       });
 
       if (existingRequest) {
-        throw createError.validation('You already have a pending join request', {
-          field: 'organizationId',
-        });
+        throw createError.validation(
+          'You already have a pending join request',
+          {
+            field: 'organizationId',
+          }
+        );
       }
 
       const request = await OrganizationJoinRequest.create({

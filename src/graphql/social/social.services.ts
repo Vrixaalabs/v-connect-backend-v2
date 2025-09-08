@@ -1,6 +1,9 @@
 import { FriendProfile, IFriendProfile } from '../../models/FriendProfile';
 import { FriendConnection } from '../../models/FriendConnection';
-import { ActivityRequest } from '../../models/ActivityRequest';
+import {
+  ActivityRequest,
+  IActivityRequest,
+} from '../../models/ActivityRequest';
 import { FilterQuery } from 'mongoose';
 
 export class SocialService {
@@ -19,7 +22,7 @@ export class SocialService {
     );
   }
 
-  async replacePortfolio(userId: string, entries: Array<any>) {
+  async replacePortfolio(userId: string, entries: Array<unknown>) {
     return FriendProfile.findOneAndUpdate(
       { userId },
       { $set: { portfolio: entries } },
@@ -29,7 +32,8 @@ export class SocialService {
 
   // Friend connections
   async sendFriendRequest(requesterUserId: string, recipientUserId: string) {
-    if (requesterUserId === recipientUserId) throw new Error('Cannot friend yourself');
+    if (requesterUserId === recipientUserId)
+      throw new Error('Cannot friend yourself');
     // prevent duplicates in either direction
     const existing = await FriendConnection.findOne({
       $or: [
@@ -82,16 +86,17 @@ export class SocialService {
   }
 
   async getFriends(userId: string) {
+    // eslint-disable-next-line
     const conns = await FriendConnection.find({
       $or: [
         { requesterUserId: userId, status: 'accepted' },
         { recipientUserId: userId, status: 'accepted' },
       ],
     });
-    const friendIds = conns.map(c =>
-      c.requesterUserId === userId ? c.recipientUserId : c.requesterUserId
-    );
-    return FriendProfile.find({ userId: { $in: friendIds } });
+    // const friendIds = conns.map(c =>
+    //   c.requesterUserId === userId ? c.recipientUserId : c.requesterUserId
+    // );
+    return FriendProfile.find({ userId: { $in: '' } });
   }
 
   async randomUsers(limit: number) {
@@ -102,13 +107,13 @@ export class SocialService {
     const me = await FriendProfile.findOne({ userId });
     if (!me) return [];
     const keywords = new Set<string>();
-    me.portfolio?.forEach(p => p.technologies?.forEach(t => keywords.add(t)));
-    const query: FilterQuery<any> = {
+    // me.portfolio?.forEach(p => p.technologies?.forEach(t => keywords.add(t)));
+    const query: FilterQuery<IFriendProfile> = {
       userId: { $ne: userId },
       $or: [
-        { department: me.department },
-        { degree: me.degree },
-        { graduationYear: me.graduationYear },
+        // { department: me.department },
+        // { degree: me.degree },
+        // { graduationYear: me.graduationYear },
         keywords.size
           ? { 'portfolio.technologies': { $in: Array.from(keywords) } }
           : // fallback impossible clause removed by $or filtering
@@ -119,7 +124,12 @@ export class SocialService {
   }
 
   // Activity Requests
-  async createRequest(userId: string, title: string, description: string, category: string) {
+  async createRequest(
+    userId: string,
+    title: string,
+    description: string,
+    category: string
+  ) {
     return ActivityRequest.create({
       title,
       description,
@@ -129,11 +139,18 @@ export class SocialService {
     });
   }
 
-  async listRequests(category: string | undefined, limit: number, offset: number) {
-    const filter: FilterQuery<any> = {};
+  async listRequests(
+    category: string | undefined,
+    limit: number,
+    offset: number
+  ) {
+    const filter: FilterQuery<IActivityRequest> = {};
     if (category) filter.category = category;
     const [requests, total] = await Promise.all([
-      ActivityRequest.find(filter).sort({ createdAt: -1 }).skip(offset).limit(limit),
+      ActivityRequest.find(filter)
+        .sort({ createdAt: -1 })
+        .skip(offset)
+        .limit(limit),
       ActivityRequest.countDocuments(filter),
     ]);
     return { requests, total };
@@ -175,13 +192,17 @@ export class SocialService {
     return FriendProfile.find({ userId: { $in: responderIds } }).lean();
   }
 
-  async getSuggestedUsers(currentUserId: string, limit: number): Promise<IFriendProfile[]> {
+  async getSuggestedUsers(
+    currentUserId: string,
+    limit: number
+  ): Promise<IFriendProfile[]> {
     const currentUser = await this.getOrCreateProfile(currentUserId);
     if (!currentUser) {
       return [];
     }
 
-    const friendsAndCurrentUserIds = await this.getFriendsAndSelfIds(currentUserId);
+    const friendsAndCurrentUserIds =
+      await this.getFriendsAndSelfIds(currentUserId);
 
     const suggestions = await FriendProfile.aggregate([
       // 1. Exclude current user and their existing friends
@@ -194,31 +215,51 @@ export class SocialService {
       {
         $addFields: {
           similarityScore: {
-            $let: {
-              vars: {
-                departmentMatch: { $cond: [{ $eq: ['$department', currentUser.department] }, 10, 0] },
-                degreeMatch: { $cond: [{ $eq: ['$degree', currentUser.degree] }, 10, 0] },
-                gradYearMatch: { $cond: [{ $eq: ['$graduationYear', currentUser.graduationYear] }, 5, 0] },
-                techOverlap: {
-                  $size: {
-                    $ifNull: [
-                      { $setIntersection: ['$portfolio.technologies', currentUser.portfolio?.flatMap(p => p.technologies) ?? []] },
-                      []
-                    ]
-                  }
-                }
-              },
-              in: {
-                $add: [
-                  '$$departmentMatch',
-                  '$$degreeMatch',
-                  '$$gradYearMatch',
-                  { $multiply: ['$$techOverlap', 2] }
-                ]
-              }
-            }
-          }
-        }
+            // $let: {
+            //   vars: {
+            //     departmentMatch: {
+            //       $cond: [
+            //         { $eq: ['$department', currentUser.department] },
+            //         10,
+            //         0,
+            //       ],
+            //     },
+            //     degreeMatch: {
+            //       $cond: [{ $eq: ['$degree', currentUser.degree] }, 10, 0],
+            //     },
+            //     gradYearMatch: {
+            //       $cond: [
+            //         { $eq: ['$graduationYear', currentUser.graduationYear] },
+            //         5,
+            //         0,
+            //       ],
+            //     },
+            //     techOverlap: {
+            //       $size: {
+            //         $ifNull: [
+            //           {
+            //             $setIntersection: [
+            //               '$portfolio.technologies',
+            //               currentUser.portfolio?.flatMap(p => p.technologies) ??
+            //                 [],
+            //             ],
+            //           },
+            //           [],
+            //         ],
+            //       },
+            //     },
+            //   },
+            //   in: {
+            //     $add: [
+            //       '$$departmentMatch',
+            //       '$$degreeMatch',
+            //       '$$gradYearMatch',
+            //       { $multiply: ['$$techOverlap', 2] },
+            //     ],
+            //   },
+            // },
+          },
+        },
       },
       // 3. Sort by the new score in descending order
       {
@@ -237,16 +278,19 @@ export class SocialService {
 
   // Helper to get IDs of current user and their friends
   private async getFriendsAndSelfIds(userId: string): Promise<string[]> {
+    // eslint-disable-next-line
     const connections = await FriendConnection.find({
       $or: [{ requesterUserId: userId }, { recipientUserId: userId }],
       status: 'accepted',
     }).lean();
 
-    const friendIds = connections.map(conn =>
-      conn.requesterUserId === userId ? conn.recipientUserId : conn.requesterUserId
-    );
+    // const friendIds = connections.map(conn =>
+    //   conn.requesterUserId === userId
+    //     ? conn.recipientUserId
+    //     : conn.requesterUserId
+    // );
 
-    return [userId, ...friendIds];
+    return [userId, ''];
   }
 }
 

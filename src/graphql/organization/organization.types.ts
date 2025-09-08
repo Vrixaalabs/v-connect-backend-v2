@@ -169,23 +169,23 @@ export const organizationTypes = gql`
       page: Int = 1
       limit: Int = 10
     ): OrganizationsResponse!
-    
+
     getOrganizationBySlug(slug: String!): OrganizationResponse!
     getOrganizationById(organizationId: ID!): OrganizationResponse!
-    
+
     # Role queries
     getOrganizationRoles(organizationId: ID!): OrganizationRolesResponse!
     getOrganizationRole(roleId: ID!): OrganizationRoleResponse!
   }
 
-  extend type Mutation {    
+  extend type Mutation {
     assignOrganizationRole(
       organizationId: ID!
       userId: ID!
       roleId: ID!
       departmentId: ID
     ): OrganizationRoleResponse!
-    
+
     removeOrganizationRole(
       organizationId: ID!
       userId: ID!
@@ -195,8 +195,14 @@ export const organizationTypes = gql`
     followOrganization(organizationId: ID!): OrganizationResponse!
     unfollowOrganization(organizationId: ID!): OrganizationResponse!
 
-    createOrganizationRole(organizationId: ID!, input: CreateOrganizationRoleInput!): OrganizationRoleResponse!
-    updateOrganizationRole(roleId: ID!, input: UpdateOrganizationRoleInput!): OrganizationRoleResponse!
+    createOrganizationRole(
+      organizationId: ID!
+      input: CreateOrganizationRoleInput!
+    ): OrganizationRoleResponse!
+    updateOrganizationRole(
+      roleId: ID!
+      input: UpdateOrganizationRoleInput!
+    ): OrganizationRoleResponse!
     deleteOrganizationRole(roleId: ID!): OrganizationRoleResponse!
 
     createJoinRequest(input: CreateJoinRequestInput!): JoinRequestResponse!

@@ -25,7 +25,7 @@ export const socialQueries = {
     { user, isAuthenticated }: GraphQLContext
   ) => {
     if (!isAuthenticated) throw new Error('Not authenticated');
-    const users = await socialService.suggestedUsers(user!.id, limit);
+    const users = await socialService.suggestedUsers(user?.id as string, limit);
     return { users };
   },
   getFriends: async (
@@ -34,12 +34,16 @@ export const socialQueries = {
     { user, isAuthenticated }: GraphQLContext
   ) => {
     if (!isAuthenticated) throw new Error('Not authenticated');
-    const connections = await socialService.getFriends(user!.id);
+    const connections = await socialService.getFriends(user?.id as string);
     return { connections };
   },
   getRequests: async (
     _: unknown,
-    { category, limit = 10, offset = 0 }: { category?: string; limit: number; offset: number },
+    {
+      category,
+      limit = 10,
+      offset = 0,
+    }: { category?: string; limit: number; offset: number },
     { isAuthenticated }: GraphQLContext
   ) => {
     if (!isAuthenticated) throw new Error('Not authenticated');
@@ -50,7 +54,11 @@ export const socialQueries = {
     );
     return { requests, total };
   },
-  getRequest: async (_: unknown, { id }: { id: string }, { isAuthenticated }: GraphQLContext) => {
+  getRequest: async (
+    _: unknown,
+    { id }: { id: string },
+    { isAuthenticated }: GraphQLContext
+  ) => {
     if (!isAuthenticated) throw new Error('Not authenticated');
     return socialService.getRequest(id);
   },

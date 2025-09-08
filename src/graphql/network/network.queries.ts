@@ -1,22 +1,35 @@
-import { FriendConnection, FriendProfile } from '@/models';
+import {
+  FriendConnection,
+  IFriendConnection,
+} from '../../models/FriendConnection';
+import { FriendProfile, IFriendProfile } from '../../models/FriendProfile';
 import { GraphQLContext } from '../context';
 
 export const networkQueries = {
-  getFriendConnections: async (_: any, { page = 1, limit = 10, status }: { page: number; limit: number; status?: string }, { isAuthenticated, user }: GraphQLContext) => {
+  getFriendConnections: async (
+    _: unknown,
+    {
+      page = 1,
+      limit = 10,
+      status,
+    }: { page: number; limit: number; status?: string },
+    { isAuthenticated, user }: GraphQLContext
+  ) => {
     try {
       if (!isAuthenticated) {
         throw new Error('Not authenticated');
       }
 
       const query = {
-        $or: [
-          { userId: user?.id },
-          { friendId: user?.id }
-        ]
+        $or: [{ userId: user?.id }, { friendId: user?.id }],
       };
 
       if (status) {
-        query['status'] = status.toLowerCase();
+        (query as { status?: string })['status'] = status.toLowerCase() as
+          | 'pending'
+          | 'accepted'
+          | 'rejected'
+          | 'blocked';
       }
 
       const total = await FriendConnection.countDocuments(query);
@@ -41,7 +54,7 @@ export const networkQueries = {
     } catch (error) {
       return {
         success: false,
-        message: error.message,
+        message: error instanceof Error ? error.message : 'Unknown error',
         connections: [],
         total: 0,
         page,
@@ -51,27 +64,36 @@ export const networkQueries = {
     }
   },
 
-  getFriendProfile: async (_: any, { userId }: { userId: string }, context: Context) => {
+  getFriendProfile: async (
+    _: unknown,
+    { userId }: { userId: string },
+    context: GraphQLContext
+  ) => {
     try {
       if (!context.isAuthenticated) {
         throw new Error('Not authenticated');
       }
 
-      const profile = await FriendProfile.findOne({ userId })
-        .populate('userId', 'firstName lastName avatar email');
+      const profile = await FriendProfile.findOne({ userId }).populate(
+        'userId',
+        'firstName lastName avatar email'
+      );
 
       if (!profile) {
         throw new Error('Profile not found');
       }
 
       // Check visibility permissions
-      if (profile.visibility === 'private' && profile.userId !== context.userId) {
+      if (
+        profile.visibility === 'private' &&
+        profile.userId !== context.user?.id
+      ) {
         const isConnected = await FriendConnection.exists({
           $or: [
-            { userId: context.userId, friendId: userId },
-            { userId: userId, friendId: context.userId }
+            { userId: context.user?.id, friendId: userId },
+            { userId: userId, friendId: context.user?.id },
           ],
-          status: 'accepted'
+          status: 'accepted',
         });
 
         if (!isConnected) {
@@ -87,13 +109,17 @@ export const networkQueries = {
     } catch (error) {
       return {
         success: false,
-        message: error.message,
+        message: error instanceof Error ? error.message : 'Unknown error',
         profile: null,
       };
     }
   },
 
-  getFriendSuggestions: async (_: any, { limit = 10 }: { limit: number }, context: Context) => {
+  getFriendSuggestions: async (
+    _: unknown,
+    { limit = 10 }: { limit: number },
+    context: GraphQLContext
+  ) => {
     try {
       if (!context.isAuthenticated) {
         throw new Error('Not authenticated');
@@ -101,31 +127,38 @@ export const networkQueries = {
 
       // Get current user's connections
       const currentConnections = await FriendConnection.find({
-        $or: [
-          { userId: context.userId },
-          { friendId: context.userId }
-        ]
+        $or: [{ userId: context.user?.id }, { friendId: context.user?.id }],
       }).select('userId friendId');
 
       // Get connected user IDs
       const connectedUserIds = new Set(
-        currentConnections.flatMap(conn => [conn.userId, conn.friendId])
+        currentConnections.flatMap((conn: IFriendConnection) => [
+          conn.userId,
+          conn.friendId,
+        ])
       );
 
       // Get current user's profile
-      const userProfile = await FriendProfile.findOne({ userId: context.userId });
+      const userProfile = await FriendProfile.findOne({
+        userId: context.user?.id,
+      });
 
       // Find profiles with similar interests or education
       const suggestions = await FriendProfile.find({
-        userId: { $ne: context.userId, $nin: Array.from(connectedUserIds) },
+        userId: { $ne: context.user?.id, $nin: Array.from(connectedUserIds) },
         visibility: 'public',
         $or: [
           { interests: { $in: userProfile?.interests || [] } },
-          { 'education.institute': { $in: userProfile?.education?.map(e => e.institute) || [] } }
-        ]
+          {
+            'education.institute': {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              $in: userProfile?.education?.map((e: any) => e.institute) || [],
+            },
+          },
+        ],
       })
-      .limit(limit)
-      .populate('userId', 'firstName lastName avatar');
+        .limit(limit)
+        .populate('userId', 'firstName lastName avatar');
 
       return {
         success: true,
@@ -136,14 +169,14 @@ export const networkQueries = {
     } catch (error) {
       return {
         success: false,
-        message: error.message,
+        message: error instanceof Error ? error.message : 'Unknown error',
         suggestions: [],
         total: 0,
       };
     }
   },
 
-  getNetworkStats: async (_: any, __: any, context: Context) => {
+  getNetworkStats: async (_: unknown, __: unknown, context: GraphQLContext) => {
     try {
       if (!context.isAuthenticated) {
         throw new Error('Not authenticated');
@@ -151,38 +184,40 @@ export const networkQueries = {
 
       const [totalConnections, pendingRequests] = await Promise.all([
         FriendConnection.countDocuments({
-          $or: [
-            { userId: context.userId },
-            { friendId: context.userId }
-          ],
-          status: 'accepted'
+          $or: [{ userId: context.user?.id }, { friendId: context.user?.id }],
+          status: 'accepted',
         }),
         FriendConnection.countDocuments({
-          friendId: context.userId,
-          status: 'pending'
-        })
+          friendId: context.user?.id,
+          status: 'pending',
+        }),
       ]);
 
-      const userProfile = await FriendProfile.findOne({ userId: context.userId });
+      const userProfile = await FriendProfile.findOne({
+        userId: context.user?.id,
+      });
       const connectedProfiles = await FriendProfile.find({
         userId: {
-          $in: (await FriendConnection.find({
-            $or: [
-              { userId: context.userId },
-              { friendId: context.userId }
-            ],
-            status: 'accepted'
-          })).map(conn => 
-            conn.userId === context.userId ? conn.friendId : conn.userId
-          )
-        }
+          $in: (
+            await FriendConnection.find({
+              $or: [
+                { userId: context.user?.id },
+                { friendId: context.user?.id },
+              ],
+              status: 'accepted',
+            })
+          ).map((conn: IFriendConnection) =>
+            conn.userId === context.user?.id ? conn.friendId : conn.userId
+          ),
+        },
       });
 
       const commonInterests = new Set(
-        connectedProfiles.flatMap(profile => 
-          profile.interests?.filter(interest => 
-            userProfile?.interests?.includes(interest)
-          ) || []
+        connectedProfiles.flatMap(
+          (profile: IFriendProfile) =>
+            profile.interests?.filter((interest: string) =>
+              userProfile?.interests?.includes(interest)
+            ) || []
         )
       ).size;
 
@@ -195,19 +230,19 @@ export const networkQueries = {
           mutualFriends: 0, // This would require additional computation
           commonInterests,
           commonGroups: 0, // This would require integration with groups/entities
-        }
+        },
       };
     } catch (error) {
       return {
         success: false,
-        message: error.message,
+        message: error instanceof Error ? error.message : 'Unknown error',
         stats: {
           totalConnections: 0,
           pendingRequests: 0,
           mutualFriends: 0,
           commonInterests: 0,
           commonGroups: 0,
-        }
+        },
       };
     }
   },

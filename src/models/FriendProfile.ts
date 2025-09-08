@@ -71,94 +71,106 @@ const friendProfileSchema = new Schema<IFriendProfile>(
       type: String,
       maxlength: 500,
     },
-    interests: [{
-      type: String,
-      trim: true,
-    }],
-    education: [{
-      institute: {
+    interests: [
+      {
         type: String,
-        required: true,
+        trim: true,
       },
-      degree: {
+    ],
+    education: [
+      {
+        institute: {
+          type: String,
+          required: true,
+        },
+        degree: {
+          type: String,
+          required: true,
+        },
+        field: {
+          type: String,
+          required: true,
+        },
+        startYear: {
+          type: Number,
+          required: true,
+        },
+        endYear: {
+          type: Number,
+        },
+        current: {
+          type: Boolean,
+          default: false,
+        },
+      },
+    ],
+    experience: [
+      {
+        company: {
+          type: String,
+          required: true,
+        },
+        position: {
+          type: String,
+          required: true,
+        },
+        location: {
+          type: String,
+          required: true,
+        },
+        startDate: {
+          type: Date,
+          required: true,
+        },
+        endDate: {
+          type: Date,
+        },
+        current: {
+          type: Boolean,
+          default: false,
+        },
+        description: {
+          type: String,
+        },
+      },
+    ],
+    skills: [
+      {
         type: String,
-        required: true,
+        trim: true,
       },
-      field: {
-        type: String,
-        required: true,
+    ],
+    socialLinks: [
+      {
+        platform: {
+          type: String,
+          required: true,
+        },
+        url: {
+          type: String,
+          required: true,
+        },
       },
-      startYear: {
-        type: Number,
-        required: true,
+    ],
+    achievements: [
+      {
+        title: {
+          type: String,
+          required: true,
+        },
+        description: {
+          type: String,
+          required: true,
+        },
+        date: {
+          type: Date,
+          required: true,
+        },
+        url: {
+          type: String,
+        },
       },
-      endYear: {
-        type: Number,
-      },
-      current: {
-        type: Boolean,
-        default: false,
-      },
-    }],
-    experience: [{
-      company: {
-        type: String,
-        required: true,
-      },
-      position: {
-        type: String,
-        required: true,
-      },
-      location: {
-        type: String,
-        required: true,
-      },
-      startDate: {
-        type: Date,
-        required: true,
-      },
-      endDate: {
-        type: Date,
-      },
-      current: {
-        type: Boolean,
-        default: false,
-      },
-      description: {
-        type: String,
-      },
-    }],
-    skills: [{
-      type: String,
-      trim: true,
-    }],
-    socialLinks: [{
-      platform: {
-        type: String,
-        required: true,
-      },
-      url: {
-        type: String,
-        required: true,
-      },
-    }],
-    achievements: [{
-      title: {
-        type: String,
-        required: true,
-      },
-      description: {
-        type: String,
-        required: true,
-      },
-      date: {
-        type: Date,
-        required: true,
-      },
-      url: {
-        type: String,
-      },
-    }],
+    ],
     stats: {
       totalFriends: {
         type: Number,
@@ -198,9 +210,12 @@ friendProfileSchema.index({ skills: 1 });
 friendProfileSchema.index({ interests: 1 });
 
 // Auto-update lastActive
-friendProfileSchema.pre('save', function(next) {
+friendProfileSchema.pre('save', function (next) {
   this.lastActive = new Date();
   next();
 });
 
-export const FriendProfile = mongoose.model<IFriendProfile>('FriendProfile', friendProfileSchema);
+export const FriendProfile = mongoose.model<IFriendProfile>(
+  'FriendProfile',
+  friendProfileSchema
+);

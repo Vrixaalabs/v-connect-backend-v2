@@ -1,7 +1,6 @@
 import { gql } from 'apollo-server-express';
 
 export const adminTypes = gql`
-
   type OrganizationJoinRequest {
     requestId: ID!
     organizationId: ID!
@@ -43,7 +42,7 @@ export const adminTypes = gql`
       page: Int = 1
       limit: Int = 10
     ): JoinRequestsResponse!
-    
+
     getJoinRequest(requestId: ID!): JoinRequestResponse!
   }
 

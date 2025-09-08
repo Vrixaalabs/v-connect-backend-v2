@@ -85,13 +85,10 @@ const friendConnectionSchema = new Schema<IFriendConnection>(
 );
 
 // Ensure unique connections between users
-friendConnectionSchema.index(
-  { userId: 1, friendId: 1 },
-  { unique: true }
-);
+friendConnectionSchema.index({ userId: 1, friendId: 1 }, { unique: true });
 
 // Prevent self-connections
-friendConnectionSchema.pre('save', function(next) {
+friendConnectionSchema.pre('save', function (next) {
   if (this.userId === this.friendId) {
     const err = new Error('Cannot create friend connection with self');
     return next(err);
@@ -100,7 +97,7 @@ friendConnectionSchema.pre('save', function(next) {
 });
 
 // Update metadata timestamps based on status changes
-friendConnectionSchema.pre('save', function(next) {
+friendConnectionSchema.pre('save', function (next) {
   if (this.isModified('status')) {
     switch (this.status) {
       case 'accepted':
@@ -117,4 +114,7 @@ friendConnectionSchema.pre('save', function(next) {
   next();
 });
 
-export const FriendConnection = mongoose.model<IFriendConnection>('FriendConnection', friendConnectionSchema);
+export const FriendConnection = mongoose.model<IFriendConnection>(
+  'FriendConnection',
+  friendConnectionSchema
+);

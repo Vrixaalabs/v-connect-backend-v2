@@ -4,7 +4,10 @@ import { v4 as uuidv4 } from 'uuid';
 import { config } from '../config/app.config';
 import { Organization, IOrganization } from './Organization';
 import { IRole, Role } from './Role';
-import { OrganizationUserRole as OrganizationUserRoleModel, OrganizationUserRole } from './OrganizationUserRole';
+import {
+  OrganizationUserRole as OrganizationUserRoleModel,
+  OrganizationUserRole,
+} from './OrganizationUserRole';
 
 export interface IUser extends Document {
   userId: string;
@@ -192,8 +195,11 @@ userSchema.pre('save', async function (next) {
 
   try {
     // Use higher number of rounds for super admin
-    const rounds = this.role === 'super_admin' ? 12 : (config.jwt.bcryptRounds as number || 10);
-    console.log('Hashing password with rounds:', rounds, 'for role:', this.role);
+    const rounds =
+      this.role === 'super_admin'
+        ? 12
+        : (config.jwt.bcryptRounds as number) || 10;
+
     const salt = await bcrypt.genSalt(rounds);
     this.password = await bcrypt.hash(this.password, salt);
     next();
@@ -218,7 +224,9 @@ userSchema.methods.getOrganizations = async function (): Promise<
     isPrimary: boolean;
   }>
 > {
-  const memberships = await OrganizationUserRoleModel.find({ userId: this.userId })
+  const memberships = await OrganizationUserRole.find({
+    userId: this.userId,
+  })
     .populate({
       path: 'organizationId',
       model: 'Organization',
@@ -236,7 +244,7 @@ userSchema.methods.getOrganizations = async function (): Promise<
       organizationId: IOrganization;
       roleId: IRole;
     };
-    
+
     return {
       organization: typedMembership.organizationId,
       role: typedMembership.roleId,
@@ -367,7 +375,7 @@ userSchema.methods.getPermissionsForOrganization = async function (
     actions: string[];
   }>
 > {
-    const membership = await OrganizationUserRoleModel.findOne({
+  const membership = await OrganizationUserRoleModel.findOne({
     userId: this.userId,
     organizationId,
     status: 'active',

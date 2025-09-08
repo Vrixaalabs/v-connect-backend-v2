@@ -1,7 +1,5 @@
-import { IInstitute } from '../../models/Institute';
 import { IOrganization } from '../../models/Organization';
 import { IOrganizationRole } from '../../models/OrganizationRole';
-import { OrganizationRole } from '../../models/OrganizationRole';
 import { OrganizationJoinRequest } from '../../models/OrganizationJoinRequest';
 
 // Base Response Types

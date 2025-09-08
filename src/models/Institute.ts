@@ -90,10 +90,12 @@ const InstituteSchema = new Schema<IInstitute>({
     type: Number,
     default: 0,
   },
-  followers: [{
-    type: String,
-    ref: 'User',
-  }],
+  followers: [
+    {
+      type: String,
+      ref: 'User',
+    },
+  ],
   studentsCount: {
     type: Number,
     default: 0,
@@ -129,14 +131,14 @@ const InstituteSchema = new Schema<IInstitute>({
 });
 
 // Pre-save middleware to update timestamps and counts
-InstituteSchema.pre('save', function(next) {
+InstituteSchema.pre('save', function (next) {
   this.updatedAt = new Date();
-  
+
   next();
 });
 
 // Create slug from name
-InstituteSchema.pre('save', function(next) {
+InstituteSchema.pre('save', function (next) {
   if (!this.isModified('name')) {
     return next();
   }

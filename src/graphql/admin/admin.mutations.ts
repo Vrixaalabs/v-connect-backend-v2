@@ -28,10 +28,13 @@ export const adminMutations = {
       );
 
       if (!request) {
-        throw createError.notFound(`Join request with ID ${requestId} not found`, {
-          entityType: 'OrganizationJoinRequest',
-          entityId: requestId,
-        });
+        throw createError.notFound(
+          `Join request with ID ${requestId} not found`,
+          {
+            entityType: 'OrganizationJoinRequest',
+            entityId: requestId,
+          }
+        );
       }
 
       // Get student role
@@ -97,10 +100,13 @@ export const adminMutations = {
       );
 
       if (!request) {
-        throw createError.notFound(`Join request with ID ${requestId} not found`, {
-          entityType: 'OrganizationJoinRequest',
-          entityId: requestId,
-        });
+        throw createError.notFound(
+          `Join request with ID ${requestId} not found`,
+          {
+            entityType: 'OrganizationJoinRequest',
+            entityId: requestId,
+          }
+        );
       }
 
       return {
