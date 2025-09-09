@@ -61,11 +61,11 @@ export const inviteTypes = gql`
     updatedAt: String!
     user: User!
   }
-  
+
   input GetInviteByEntityIdInput {
     entityId: String!
   }
-  
+
   type GetInviteByEntityIdResponse {
     success: Boolean!
     message: String!
@@ -94,7 +94,11 @@ export const inviteTypes = gql`
   }
 
   extend type Mutation {
-    inviteEntityMember(input: InviteEntityMemberInput!): InviteEntityMemberResponse
-    acceptEntityInvite(input: AcceptEntityInviteInput!): AcceptEntityInviteResponse
+    inviteEntityMember(
+      input: InviteEntityMemberInput!
+    ): InviteEntityMemberResponse
+    acceptEntityInvite(
+      input: AcceptEntityInviteInput!
+    ): AcceptEntityInviteResponse
   }
 `;

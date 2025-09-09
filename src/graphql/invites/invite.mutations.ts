@@ -2,11 +2,11 @@ import { createError } from '@/middleware/errorHandler';
 import { InviteModel } from '@/models/invite.model';
 import { BaseError } from '../../types/errors/base.error';
 import { GraphQLContext } from '../context';
-import { 
+import {
   InviteEntityMemberResponse,
   InviteEntityMemberArgs,
   AcceptEntityInviteArgs,
-  AcceptEntityInviteResponse
+  AcceptEntityInviteResponse,
 } from './invite.interfaces';
 import { User } from '@/models/User';
 import { EntityMember } from '@/models/EntityMember';
@@ -24,7 +24,6 @@ export const inviteMutations = {
     }
 
     try {
-
       // check if user exists
       const user = await User.findOne({ email: input.email });
       if (!user) {
@@ -84,10 +83,10 @@ export const inviteMutations = {
       await invite.save();
 
       // add user to entitymembers
-      const entityMember = await EntityMember.create({
+      await EntityMember.create({
         userId: invite.userId,
         entityId: invite.entityId,
-        roleId: "7e194669-d391-4e58-8279-3695285fdd04",
+        roleId: '7e194669-d391-4e58-8279-3695285fdd04',
         status: MemberStatus.ACTIVE,
       });
 
@@ -100,7 +99,17 @@ export const inviteMutations = {
         });
       }
 
-      entity.metadata!.totalMembers++;
+      // entity.metadata!.totalMembers += 1;
+      if (entity.metadata) {
+        entity.metadata.totalMembers = entity?.metadata?.totalMembers || 0 + 1;
+      } else {
+        entity.metadata = {
+          totalMembers: 1,
+          totalPosts: 0,
+          totalEvents: 0,
+          lastActivityAt: new Date(),
+        };
+      }
       await entity.save();
 
       return {
