@@ -22,10 +22,40 @@ export const inviteTypes = gql`
     batch: String!
   }
 
+  type IInvitesResponse {
+    success: Boolean!
+    message: String!
+    invites: [Invite!]!
+  }
+
   type InviteEntityMemberResponse {
     success: Boolean!
     message: String!
     invite: Invite
+  }
+
+  type InviteWithEntity {
+    inviteId: String!
+    email: String!
+    status: String!
+    entityId: String!
+    userId: String!
+    role: String!
+    rollNumber: String!
+    batch: String!
+    createdAt: String!
+    updatedAt: String!
+    entity: Entity!
+  }
+
+  type MyEntityInvitesResponse {
+    success: Boolean!
+    message: String!
+    invites: [InviteWithEntity!]!
+  }
+
+  extend type Query {
+    getMyEntityInvites: MyEntityInvitesResponse
   }
 
   extend type Mutation {

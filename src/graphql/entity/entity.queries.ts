@@ -179,12 +179,38 @@ export const entityQueries = {
         .lean()
         .exec();
 
+      console.log("memberEntities", memberEntities);
+
+      if (memberEntities.length === 0) {
+        return {
+          success: true,
+          message: 'Entities retrieved successfully',
+          entities: [],
+          total: 0,
+          page: 1,
+          limit: 0,
+          totalPages: 0,
+        };
+      }
+
       const entities = await Entity.find({
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         entityId: { $in: memberEntities.map((me: any) => me.entityId) },
       })
         .lean()
         .exec();
+
+      if (entities.length === 0) {
+        return {
+          success: true,
+          message: 'Entities retrieved successfully',
+          entities: [],
+          total: 0,
+          page: 1,
+          limit: 0,
+          totalPages: 0,
+        };
+      }
 
       return {
         success: true,

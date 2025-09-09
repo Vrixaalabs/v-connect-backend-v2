@@ -1,8 +1,35 @@
+import { IEntity } from '@/models/Entity';
 import { IUser } from '@/models/User';
 import { IInvite } from '@/types/types';
 
 export interface Context {
   isAuthenticated: boolean;
+}
+
+export interface IBaseResponse {
+  success: boolean;
+  message: string;
+}
+export interface IInvitesResponse extends IBaseResponse {
+  invites: IInvite[];
+}
+
+export interface InviteWithEntity {
+  inviteId: string;
+  email: string;
+  status: string;
+  entityId: string;
+  userId: string;
+  role: string;
+  rollNumber: string;
+  batch: string;
+  createdAt: string;
+  updatedAt: string;
+  entity: IEntity;
+}
+
+export interface MyEntityInvitesResponse extends IBaseResponse {
+  invites: InviteWithEntity[];
 }
 
 export interface InviteEntityMemberInput {
