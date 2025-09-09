@@ -28,6 +28,20 @@ export interface InviteWithEntity {
   entity: IEntity;
 }
 
+export interface InviteWithUser {
+  inviteId: string;
+  email: string;
+  status: string;
+  entityId: string;
+  userId: string;
+  role: string;
+  rollNumber: string;
+  batch: string;
+  createdAt: string;
+  updatedAt: string;
+  user: IUser;
+}
+
 export interface MyEntityInvitesResponse extends IBaseResponse {
   invites: InviteWithEntity[];
 }
@@ -48,4 +62,14 @@ export interface InviteEntityMemberResponse {
   success: boolean;
   message: string;
   invite: IInvite;
+}
+
+export interface GetInviteByEntityIdInput {
+  entityId: string;
+}
+
+export interface GetInviteByEntityIdResponse {
+  success: boolean;
+  message: string;
+  invites: InviteWithUser[];
 }

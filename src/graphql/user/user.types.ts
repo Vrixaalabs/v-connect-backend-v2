@@ -19,8 +19,10 @@ export interface IMockToken {
 export const userTypes = gql`
   type User {
     _id: ID!
+    userId: String!
     firstName: String
     lastName: String
+    avatar: String
     username: String!
     email: String!
     createdAt: String!

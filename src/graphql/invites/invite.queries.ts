@@ -5,7 +5,12 @@ import jwt, { SignOptions } from 'jsonwebtoken';
 import mongoose from 'mongoose';
 import { BaseError } from '../../types/errors/base.error';
 import { GraphQLContext } from '../context';
-import { MyEntityInvitesResponse } from './invite.interfaces';
+import {
+  GetInviteByEntityIdInput,
+  InviteEntityMemberResponse,
+  MyEntityInvitesResponse,
+  GetInviteByEntityIdResponse,
+} from './invite.interfaces';
 
 export const inviteQueries = {
   getMyEntityInvites: async (
@@ -18,10 +23,17 @@ export const inviteQueries = {
     }
 
     try {
-    //   aggregate
+      //   aggregate
       const invites = await InviteModel.aggregate([
         { $match: { userId: context.user?.id } },
-        { $lookup: { from: 'entities', localField: 'entityId', foreignField: 'entityId', as: 'entity' } },
+        {
+          $lookup: {
+            from: 'entities',
+            localField: 'entityId',
+            foreignField: 'entityId',
+            as: 'entity',
+          },
+        },
         { $unwind: '$entity' },
       ]);
 
@@ -38,6 +50,47 @@ export const inviteQueries = {
       }
       throw createError.database('Failed to get my entity invites', {
         operation: 'getMyEntityInvites',
+        entityType: 'Invite',
+        error,
+      });
+    }
+  },
+  getInviteByEntityId: async (
+    _: unknown,
+    { entityId }: { entityId: string },
+    context: GraphQLContext
+  ): Promise<GetInviteByEntityIdResponse> => {
+    if (!context.isAuthenticated || !context.user) {
+      throw createError.authentication('Not authenticated');
+    }
+
+    try {
+      const invites = await InviteModel.aggregate([
+        { $match: { entityId: entityId } },
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'userId',
+            foreignField: 'userId',
+            as: 'user',
+          },
+        },
+        { $unwind: '$user' },
+      ]);
+
+      console.log(invites);
+
+      return {
+        success: true,
+        message: 'Invites retrieved successfully',
+        invites,
+      };
+    } catch (error) {
+      if (error instanceof BaseError) {
+        throw error;
+      }
+      throw createError.database('Failed to get invite by entityId', {
+        operation: 'getInviteByEntityId',
         entityType: 'Invite',
         error,
       });
