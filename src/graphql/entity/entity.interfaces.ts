@@ -41,8 +41,17 @@ export interface IEntityMetadata {
 }
 
 export interface IEntityMember {
-  userId: string;
-  role: string;
+  user: {
+    userId: string;
+    firstName: string;
+    lastName: string;
+    avatar?: string;
+  };
+  role: {
+    roleId: string;
+    name: string;
+    permissions: string[];
+  };
   joinedAt: Date;
   status: MemberStatus;
 }

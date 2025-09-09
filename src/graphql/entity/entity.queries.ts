@@ -233,75 +233,133 @@ export const entityQueries = {
     }
   },
 
+  // getEntityMembers: async (
+  //   _: unknown,
+  //   { entityId, status, role, page = 1, limit = 10 }: IGetEntityMembersInput,
+  //   { isAuthenticated }: GraphQLContext
+  // ): Promise<IEntityMembersResponse> => {
+  //   try {
+  //     if (!isAuthenticated) {
+  //       throw new Error('Not authenticated');
+  //     }
+
+  //     const entity = await Entity.findOne({ entityId });
+  //     if (!entity) {
+  //       throw new Error('Entity not found');
+  //     }
+
+  //     const entityMembers = entity.get('members') || [];
+  //     let filteredMembers = [...entityMembers];
+
+  //     if (status) {
+  //       filteredMembers = filteredMembers.filter(
+  //         (member: IEntityMember) => member.status === status.toUpperCase()
+  //       ) as IEntityMember[];
+  //     }
+
+  //     if (role) {
+  //       filteredMembers = filteredMembers.filter(
+  //         (member: IEntityMember) => member.role === role.toUpperCase()
+  //       ) as IEntityMember[];
+  //     }
+
+  //     const total = filteredMembers.length;
+  //     const totalPages = Math.ceil(total / limit);
+  //     const paginatedMembers = filteredMembers.slice(
+  //       (page - 1) * limit,
+  //       page * limit
+  //     );
+
+  //     // Convert to IEntityMember array
+  //     const members: IEntityMember[] = paginatedMembers.map(
+  //       (member: IEntityMember) => ({
+  //         userId: member.userId,
+  //         role: member.role,
+  //         joinedAt: member.joinedAt,
+  //         status: member.status as MemberStatus,
+  //       })
+  //     );
+
+  //     return {
+  //       success: true,
+  //       message: 'Members retrieved successfully',
+  //       members,
+  //       total,
+  //       page,
+  //       limit,
+  //       totalPages,
+  //     };
+  //   } catch (error) {
+  //     return {
+  //       success: false,
+  //       message:
+  //         error instanceof Error ? error.message : 'An unknown error occurred',
+  //       members: [],
+  //       total: 0,
+  //       page,
+  //       limit,
+  //       totalPages: 0,
+  //     };
+  //   }
+  // },
+
   getEntityMembers: async (
     _: unknown,
-    { entityId, status, role, page = 1, limit = 10 }: IGetEntityMembersInput,
-    { isAuthenticated }: GraphQLContext
+    { entityId }: IGetEntityMembersInput,
+    context: GraphQLContext
   ): Promise<IEntityMembersResponse> => {
+    if (!context.isAuthenticated || !context.user) {
+      throw createError.authentication('Not authenticated');
+    }
+
     try {
-      if (!isAuthenticated) {
-        throw new Error('Not authenticated');
-      }
+      const entityMembers = await EntityMember.aggregate([
+        { $match: { entityId } },
+        { $lookup: { from: 'users', localField: 'userId', foreignField: 'userId', as: 'user' } },
+        { $unwind: '$user' },
+        { $lookup: { from: 'roles', localField: 'roleId', foreignField: 'roleId', as: 'role' } },
+        { $unwind: '$role' },
+        { $project: {
+          user: {
+            userId: '$user.userId',
+            firstName: '$user.firstName',
+            lastName: '$user.lastName',
+            avatar: '$user.avatar',
+          },
+          role: {
+            roleId: 1,
+            name: 1,
+            permissions: 1,
+          },
+          joinedAt: '$joinedAt',
+          status: '$status',
+        } },
+      ]);
 
-      const entity = await Entity.findOne({ entityId });
-      if (!entity) {
-        throw new Error('Entity not found');
-      }
-
-      const entityMembers = entity.get('members') || [];
-      let filteredMembers = [...entityMembers];
-
-      if (status) {
-        filteredMembers = filteredMembers.filter(
-          (member: IEntityMember) => member.status === status.toUpperCase()
-        ) as IEntityMember[];
-      }
-
-      if (role) {
-        filteredMembers = filteredMembers.filter(
-          (member: IEntityMember) => member.role === role.toUpperCase()
-        ) as IEntityMember[];
-      }
-
-      const total = filteredMembers.length;
-      const totalPages = Math.ceil(total / limit);
-      const paginatedMembers = filteredMembers.slice(
-        (page - 1) * limit,
-        page * limit
-      );
-
-      // Convert to IEntityMember array
-      const members: IEntityMember[] = paginatedMembers.map(
-        (member: IEntityMember) => ({
-          userId: member.userId,
-          role: member.role,
-          joinedAt: member.joinedAt,
-          status: member.status as MemberStatus,
-        })
-      );
-
+      console.log("entityMembers", entityMembers);
+      
       return {
         success: true,
-        message: 'Members retrieved successfully',
-        members,
-        total,
-        page,
-        limit,
-        totalPages,
+        message: 'Entity members retrieved successfully',
+        members: entityMembers as IEntityMember[],
+        total: entityMembers.length,
+        page: 1,
+        limit: entityMembers.length,
+        totalPages: 1,
       };
+
     } catch (error) {
-      return {
-        success: false,
-        message:
-          error instanceof Error ? error.message : 'An unknown error occurred',
-        members: [],
-        total: 0,
-        page,
-        limit,
-        totalPages: 0,
-      };
+      if (error instanceof BaseError) {
+        throw error;
+      }
+      throw createError.database('Failed to get entity members', {
+        operation: 'getEntityMembers',
+        entityType: 'Entity',
+        error,
+      });
     }
   },
+  
 
   getEntityStats: async (
     _: unknown,

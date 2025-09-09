@@ -5,8 +5,13 @@ import { GraphQLContext } from '../context';
 import { 
   InviteEntityMemberResponse,
   InviteEntityMemberArgs,
+  AcceptEntityInviteArgs,
+  AcceptEntityInviteResponse
 } from './invite.interfaces';
 import { User } from '@/models/User';
+import { EntityMember } from '@/models/EntityMember';
+import { Entity } from '@/models/Entity';
+import { MemberStatus } from '../entity/entity.interfaces';
 
 export const inviteMutations = {
   inviteEntityMember: async (
@@ -52,6 +57,63 @@ export const inviteMutations = {
       }
       throw createError.database('Failed to invite entity member', {
         operation: 'inviteEntityMember',
+        entityType: 'Invite',
+        error,
+      });
+    }
+  },
+  acceptEntityInvite: async (
+    _: unknown,
+    { input }: AcceptEntityInviteArgs,
+    context: GraphQLContext
+  ): Promise<AcceptEntityInviteResponse> => {
+    if (!context.isAuthenticated) {
+      throw createError.authentication('Not authenticated');
+    }
+
+    try {
+      const invite = await InviteModel.findOne({ inviteId: input.inviteId });
+      if (!invite) {
+        throw createError.notFound('Invite not found', {
+          entityType: 'Invite',
+          inviteId: input.inviteId,
+        });
+      }
+
+      invite.status = 'accepted';
+      await invite.save();
+
+      // add user to entitymembers
+      const entityMember = await EntityMember.create({
+        userId: invite.userId,
+        entityId: invite.entityId,
+        roleId: "7e194669-d391-4e58-8279-3695285fdd04",
+        status: MemberStatus.ACTIVE,
+      });
+
+      // update entity metadata
+      const entity = await Entity.findOne({ entityId: invite.entityId });
+      if (!entity) {
+        throw createError.notFound('Entity not found', {
+          entityType: 'Entity',
+          entityId: invite.entityId,
+        });
+      }
+
+      entity.metadata!.totalMembers++;
+      await entity.save();
+
+      return {
+        success: true,
+        message: 'Invite accepted successfully',
+        invite,
+      };
+    } catch (error) {
+      if (error instanceof BaseError) {
+        throw error;
+      }
+      throw createError.database('Failed to accept entity invite', {
+        operation: 'acceptEntityInvite',
         entityType: 'Invite',
         error,
       });

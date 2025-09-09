@@ -73,3 +73,17 @@ export interface GetInviteByEntityIdResponse {
   message: string;
   invites: InviteWithUser[];
 }
+
+export interface AcceptEntityInviteInput {
+  inviteId: string;
+}
+
+export interface AcceptEntityInviteArgs {
+  input: AcceptEntityInviteInput;
+}
+
+export interface AcceptEntityInviteResponse {
+  success: boolean;
+  message: string;
+  invite: IInvite;
+}
