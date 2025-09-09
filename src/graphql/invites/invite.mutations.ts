@@ -3,6 +3,7 @@ import { InviteModel } from '@/models/invite.model';
 import { BaseError } from '../../types/errors/base.error';
 import { GraphQLContext } from '../context';
 import {
+import {
   InviteEntityMemberResponse,
   InviteEntityMemberArgs,
   AcceptEntityInviteArgs,
