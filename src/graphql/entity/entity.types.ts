@@ -186,8 +186,8 @@ export const entityTypes = `#graphql
     createEntity(input: CreateEntityInput!): EntityResponse
     updateEntity(id: ID!, input: UpdateEntityInput!): EntityResponse
     deleteEntity(id: ID!): EntityResponse
-    addEntityMember(input: AddEntityMemberInput!): EntityMemberResponse
-    updateEntityMember(id: ID!, input: UpdateEntityMemberInput!): EntityMemberResponse
+    # addEntityMember(input: AddEntityMemberInput!): EntityMemberResponse
+    # updateEntityMember(id: ID!, input: UpdateEntityMemberInput!): EntityMemberResponse
     removeEntityMember(id: ID!): EntityMemberResponse
     deleteEntityMember(id: ID!): EntityMemberResponse
     createEntityMember(input: CreateEntityMemberInput!): EntityMemberResponse

@@ -6,13 +6,11 @@ import {
   EntityStatus,
   EntityVisibility,
   MemberStatus,
-  IEntityMetadata,
   IEntity,
 } from './entity.interfaces';
 import {
   ICreateEntityMutationInput,
   IUpdateEntityMutationInput,
-  IAddEntityMemberMutationInput,
   IEntityResponse,
   IEntityMemberResponse,
 } from './entity.interfaces';
@@ -157,157 +155,157 @@ export const entityMutations = {
     }
   },
 
-  addEntityMember: async (
-    _: unknown,
-    { input }: IAddEntityMemberMutationInput,
-    { isAuthenticated, user }: GraphQLContext
-  ): Promise<IEntityMemberResponse> => {
-    try {
-      if (!isAuthenticated) {
-        throw new Error('Not authenticated');
-      }
+  // addEntityMember: async (
+  //   _: unknown,
+  //   { input }: IAddEntityMemberMutationInput,
+  //   { isAuthenticated, user }: GraphQLContext
+  // ): Promise<IEntityMemberResponse> => {
+  //   try {
+  //     if (!isAuthenticated) {
+  //       throw new Error('Not authenticated');
+  //     }
 
-      const entity = await Entity.findOne({ entityId: input.entityId });
-      if (!entity) {
-        throw new Error('Entity not found');
-      }
+  //     const entity = await Entity.findOne({ entityId: input.entityId });
+  //     if (!entity) {
+  //       throw new Error('Entity not found');
+  //     }
 
-      // Check if user has permission to add members
-      if (!user) {
-        throw new Error('User not found');
-      }
+  //     // Check if user has permission to add members
+  //     if (!user) {
+  //       throw new Error('User not found');
+  //     }
 
-      const members = entity.get('members') || [];
-      // const isAdmin = members.some(
-      //   member =>
-      //     member.userId === user.id &&
-      //     member.status === MemberStatus.ACTIVE &&
-      //     member.role.toLowerCase() === 'admin'
-      // );
+  //     const members = entity.get('members') || [];
+  //     // const isAdmin = members.some(
+  //     //   member =>
+  //     //     member.userId === user.id &&
+  //     //     member.status === MemberStatus.ACTIVE &&
+  //     //     member.role.toLowerCase() === 'admin'
+  //     // );
 
-      // if (!isAdmin) {
-      //   throw new Error('Permission denied');
-      // }
+  //     // if (!isAdmin) {
+  //     //   throw new Error('Permission denied');
+  //     // }
 
-      // // Check if user is already a member
-      // if (members.some(member => member.userId === input.userId)) {
-      //   throw new Error('User is already a member');
-      // }
+  //     // // Check if user is already a member
+  //     // if (members.some(member => member.userId === input.userId)) {
+  //     //   throw new Error('User is already a member');
+  //     // }
 
-      const newMember = {
-        userId: input.userId,
-        role: input.role,
-        joinedAt: new Date(),
-        status: MemberStatus.ACTIVE,
-      };
+  //     const newMember = {
+  //       userId: input.userId,
+  //       role: input.role,
+  //       joinedAt: new Date(),
+  //       status: MemberStatus.ACTIVE,
+  //     };
 
-      entity.set('members', [...members, newMember]);
+  //     entity.set('members', [...members, newMember]);
 
-      const metadata = entity.get('metadata') || {
-        totalMembers: 0,
-        totalPosts: 0,
-        totalEvents: 0,
-        lastActivityAt: new Date(),
-      };
-      entity.set('metadata', {
-        ...metadata,
-        totalMembers: metadata.totalMembers + 1,
-        lastActivityAt: new Date(),
-      } as IEntityMetadata);
+  //     const metadata = entity.get('metadata') || {
+  //       totalMembers: 0,
+  //       totalPosts: 0,
+  //       totalEvents: 0,
+  //       lastActivityAt: new Date(),
+  //     };
+  //     entity.set('metadata', {
+  //       ...metadata,
+  //       totalMembers: metadata.totalMembers + 1,
+  //       lastActivityAt: new Date(),
+  //     } as IEntityMetadata);
 
-      await entity.save();
+  //     await entity.save();
 
-      return {
-        success: true,
-        message: 'Member added successfully',
-        member: newMember,
-      };
-    } catch (error) {
-      if (error instanceof BaseError) {
-        throw error;
-      }
-      throw createError.database('Failed to add entity member', {
-        operation: 'add',
-        entityType: 'Entity',
-        error,
-      });
-    }
-  },
+  //     return {
+  //       success: true,
+  //       message: 'Member added successfully',
+  //       member: newMember,
+  //     };
+  //   } catch (error) {
+  //     if (error instanceof BaseError) {
+  //       throw error;
+  //     }
+  //     throw createError.database('Failed to add entity member', {
+  //       operation: 'add',
+  //       entityType: 'Entity',
+  //       error,
+  //     });
+  //   }
+  // },
 
-  updateEntityMember: async (
-    _: unknown,
-    __: unknown,
-    { isAuthenticated }: GraphQLContext
-  ): Promise<IEntityMemberResponse> => {
-    try {
-      if (!isAuthenticated) {
-        throw new Error('Not authenticated');
-      }
+  // updateEntityMember: async (
+  //   _: unknown,
+  //   __: unknown,
+  //   { isAuthenticated }: GraphQLContext
+  // ): Promise<IEntityMemberResponse> => {
+  //   try {
+  //     if (!isAuthenticated) {
+  //       throw new Error('Not authenticated');
+  //     }
 
-      const entity = await Entity.findOne({ entityId: '' });
-      if (!entity) {
-        throw new Error('Entity not found');
-      }
+  //     const entity = await Entity.findOne({ entityId: '' });
+  //     if (!entity) {
+  //       throw new Error('Entity not found');
+  //     }
 
-      // Check if user has permission to update members
-      // const isAdmin = entity.members?.some(
-      //   member =>
-      //     member.userId === user?.id &&
-      //     member.status === MemberStatus.ACTIVE &&
-      //     member.role.toLowerCase() === 'admin'
-      // );
+  //     // Check if user has permission to update members
+  //     // const isAdmin = entity.members?.some(
+  //     //   member =>
+  //     //     member.userId === user?.id &&
+  //     //     member.status === MemberStatus.ACTIVE &&
+  //     //     member.role.toLowerCase() === 'admin'
+  //     // );
 
-      // if (!isAdmin) {
-      //   throw new Error('Permission denied');
-      // }
+  //     // if (!isAdmin) {
+  //     //   throw new Error('Permission denied');
+  //     // }
 
-      // const memberIndex = entity.members?.findIndex(
-      //   member => member.userId === userId
-      // );
-      // if (memberIndex === -1) {
-      //   throw new Error('Member not found');
-      // }
+  //     // const memberIndex = entity.members?.findIndex(
+  //     //   member => member.userId === userId
+  //     // );
+  //     // if (memberIndex === -1) {
+  //     //   throw new Error('Member not found');
+  //     // }
 
-      // const updatedMember = {
-      //   ...entity.members[memberIndex],
-      //   ...input,
-      // };
+  //     // const updatedMember = {
+  //     //   ...entity.members[memberIndex],
+  //     //   ...input,
+  //     // };
 
-      // entity.members[memberIndex] = updatedMember;
+  //     // entity.members[memberIndex] = updatedMember;
 
-      // // Update metadata if status changed
-      // if (input.status && input.status !== entity.members[memberIndex].status) {
-      //   entity.metadata = {
-      //     ...entity.metadata,
-      //     totalMembers: members.filter(m => m.status === MemberStatus.ACTIVE)
-      //       .length,
-      //     lastActivityAt: new Date(),
-      //   };
-      // }
+  //     // // Update metadata if status changed
+  //     // if (input.status && input.status !== entity.members[memberIndex].status) {
+  //     //   entity.metadata = {
+  //     //     ...entity.metadata,
+  //     //     totalMembers: members.filter(m => m.status === MemberStatus.ACTIVE)
+  //     //       .length,
+  //     //     lastActivityAt: new Date(),
+  //     //   };
+  //     // }
 
-      await entity.save();
+  //     await entity.save();
 
-      return {
-        success: true,
-        message: 'Member updated successfully',
-        member: {
-          userId: '',
-          role: '',
-          joinedAt: new Date(),
-          status: MemberStatus.ACTIVE,
-        },
-      };
-    } catch (error) {
-      if (error instanceof BaseError) {
-        throw error;
-      }
-      throw createError.database('Failed to update entity member', {
-        operation: 'update',
-        entityType: 'Entity',
-        error,
-      });
-    }
-  },
+  //     return {
+  //       success: true,
+  //       message: 'Member updated successfully',
+  //       member: {
+  //         userId: '',
+  //         role: '',
+  //         joinedAt: new Date(),
+  //         status: MemberStatus.ACTIVE,
+  //       },
+  //     };
+  //   } catch (error) {
+  //     if (error instanceof BaseError) {
+  //       throw error;
+  //     }
+  //     throw createError.database('Failed to update entity member', {
+  //       operation: 'update',
+  //       entityType: 'Entity',
+  //       error,
+  //     });
+  //   }
+  // },
 
   removeEntityMember: async (
     _: unknown,
