@@ -6,7 +6,7 @@ import { IInviteTokenPayload } from '@/types/types';
 import { INVITE_TTL_MS, TOKEN_VALIDITY } from '@/utils/constant';
 import { generateInviteToken, verifyInviteToken } from '@/utils/token.util';
 import mongoose from 'mongoose';
-import { HandleInviteResult, SendInviteResult } from './invite.types';
+import { HandleInviteResult, SendInviteResult } from './invite.interfaces';
 
 const isValidEmail = (e: string): boolean => /\S+@\S+\.\S+/.test(e);
 

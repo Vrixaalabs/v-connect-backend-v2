@@ -18,9 +18,15 @@ export const entityTypes = `#graphql
     updatedAt: String!
   }
 
+  type EntityMemberRole {
+    roleId: String!
+    name: String!
+    permissions: [String!]!
+  }
+
   type EntityMember {
-    userId: String!
-    role: String!
+    user: User!
+    role: EntityMemberRole
     joinedAt: String!
     status: MemberStatus!
   }
@@ -173,7 +179,7 @@ export const entityTypes = `#graphql
     getEntityStats(organizationId: String!): EntityStatsResponse
     getEntities(organizationId: String!, type: String, status: String, page: Int!, limit: Int!): EntitiesResponse
     getEntityByEntityId(entityId: String!): EntityResponse
-    getEntityMembers(entityId: String!, status: String, role: String, page: Int!, limit: Int!): EntityMembersResponse
+    getEntityMembers(entityId: String!): EntityMembersResponse
   }
 
   extend type Mutation {

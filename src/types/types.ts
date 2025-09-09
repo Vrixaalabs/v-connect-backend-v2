@@ -20,13 +20,14 @@ export interface IAddress extends Document {
 }
 
 export interface IInvite extends Document {
-  _id?: ObjectId;
+  inviteId: string;
+  entityId: string;
+  status: 'pending' | 'accepted' | 'rejected';
+  userId: string;
   email: string;
-  orgId: Types.ObjectId;
-  roleId: Types.ObjectId;
-  token: string;
-  expiresAt: Date;
-  used: boolean;
+  rollNumber: string;
+  batch: string;
+  role: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
