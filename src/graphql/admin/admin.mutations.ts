@@ -1,8 +1,8 @@
 import { GraphQLContext } from '../context';
 import { createError } from '../../middleware/errorHandler';
-import { InstituteJoinRequest } from '../../models/InstituteJoinRequest';
-import { InstituteRole } from '../../models/InstituteRole';
-import { InstituteUserRole } from '../../models/InstituteUserRole';
+import { OrganizationJoinRequest } from '../../models/OrganizationJoinRequest';
+import { OrganizationRole } from '../../models/OrganizationRole';
+import { OrganizationUserRole } from '../../models/OrganizationUserRole';
 import { BaseError } from '../../types/errors/base.error';
 
 export const adminMutations = {
@@ -16,7 +16,7 @@ export const adminMutations = {
         throw createError.authentication('Not authenticated');
       }
 
-      const request = await InstituteJoinRequest.findOneAndUpdate(
+      const request = await OrganizationJoinRequest.findOneAndUpdate(
         { requestId, status: 'pending' },
         {
           $set: {
@@ -28,28 +28,31 @@ export const adminMutations = {
       );
 
       if (!request) {
-        throw createError.notFound(`Join request with ID ${requestId} not found`, {
-          entityType: 'InstituteJoinRequest',
-          entityId: requestId,
-        });
+        throw createError.notFound(
+          `Join request with ID ${requestId} not found`,
+          {
+            entityType: 'OrganizationJoinRequest',
+            entityId: requestId,
+          }
+        );
       }
 
       // Get student role
-      const studentRole = await InstituteRole.findOne({
-        instituteId: request.instituteId,
+      const studentRole = await OrganizationRole.findOne({
+        organizationId: request.organizationId,
         name: 'Student',
       });
 
       if (!studentRole) {
         throw createError.notFound('Student role not found', {
-          entityType: 'InstituteRole',
-          instituteId: request.instituteId,
+          entityType: 'OrganizationRole',
+          organizationId: request.organizationId,
         });
       }
 
       // Assign student role
-      await InstituteUserRole.create({
-        instituteId: request.instituteId,
+      await OrganizationUserRole.create({
+        organizationId: request.organizationId,
         userId: request.userId as string,
         roleId: studentRole.roleId,
         departmentId: request.departmentId,
@@ -68,7 +71,7 @@ export const adminMutations = {
       }
       throw createError.database('Failed to approve join request', {
         operation: 'approve',
-        entityType: 'InstituteJoinRequest',
+        entityType: 'OrganizationJoinRequest',
         requestId,
         error,
       });
@@ -85,7 +88,7 @@ export const adminMutations = {
         throw createError.authentication('Not authenticated');
       }
 
-      const request = await InstituteJoinRequest.findOneAndUpdate(
+      const request = await OrganizationJoinRequest.findOneAndUpdate(
         { requestId, status: 'pending' },
         {
           $set: {
@@ -97,10 +100,13 @@ export const adminMutations = {
       );
 
       if (!request) {
-        throw createError.notFound(`Join request with ID ${requestId} not found`, {
-          entityType: 'InstituteJoinRequest',
-          entityId: requestId,
-        });
+        throw createError.notFound(
+          `Join request with ID ${requestId} not found`,
+          {
+            entityType: 'OrganizationJoinRequest',
+            entityId: requestId,
+          }
+        );
       }
 
       return {
@@ -114,7 +120,7 @@ export const adminMutations = {
       }
       throw createError.database('Failed to reject join request', {
         operation: 'reject',
-        entityType: 'InstituteJoinRequest',
+        entityType: 'OrganizationJoinRequest',
         requestId,
         error,
       });

@@ -103,7 +103,11 @@ export default gql`
     getRandomUsers(limit: Int = 10): RandomUsersPayload!
     getSuggestedUsers(limit: Int = 10): FriendSuggestionsPayload!
     getFriends: FriendListPayload!
-    getRequests(category: ActivityCategory, limit: Int = 10, offset: Int = 0): ActivityRequestListPayload!
+    getRequests(
+      category: ActivityCategory
+      limit: Int = 10
+      offset: Int = 0
+    ): ActivityRequestListPayload!
     getRequest(id: ID!): ActivityRequest
     getRequestResponders(requestId: ID!): RequestRespondersPayload!
   }
@@ -115,7 +119,11 @@ export default gql`
     acceptFriendRequest(requesterUserId: String!): FriendConnection!
     rejectFriendRequest(requesterUserId: String!): FriendConnection!
     removeFriend(friendUserId: String!): Boolean!
-    createRequest(title: String!, description: String!, category: ActivityCategory!): ActivityRequest!
+    createRequest(
+      title: String!
+      description: String!
+      category: ActivityCategory!
+    ): ActivityRequest!
     respondToRequest(requestId: ID!): ActivityRequest!
     withdrawResponse(requestId: ID!): ActivityRequest!
   }

@@ -1,6 +1,5 @@
 import { Request, Response, Router } from 'express';
 import jwt from 'jsonwebtoken';
-import bcrypt from 'bcryptjs';
 import { config } from '../config/app.config';
 import {
   clearRefreshTokenCookie,
@@ -17,8 +16,10 @@ import mongoose from 'mongoose';
 // Predefined credentials for super admin creation
 // These should be set in environment variables in production
 const SUPER_ADMIN_SECRET = process.env.SUPER_ADMIN_SECRET || 'thisisasecretkey';
-const SUPER_ADMIN_VERIFICATION_ID = process.env.SUPER_ADMIN_VERIFICATION_ID || 'admin@vconnect.com';
-const SUPER_ADMIN_VERIFICATION_PASSWORD = process.env.SUPER_ADMIN_VERIFICATION_PASSWORD || 'admin123';
+const SUPER_ADMIN_VERIFICATION_ID =
+  process.env.SUPER_ADMIN_VERIFICATION_ID || 'admin@vconnect.com';
+const SUPER_ADMIN_VERIFICATION_PASSWORD =
+  process.env.SUPER_ADMIN_VERIFICATION_PASSWORD || 'admin123';
 
 const router = Router();
 
@@ -62,13 +63,7 @@ router.post(
       const { email, password, username, firstName, lastName } = req.body;
 
       // Validate request body
-      if (
-        !email ||
-        !password ||
-        !username ||
-        !firstName ||
-        !lastName
-      ) {
+      if (!email || !password || !username || !firstName || !lastName) {
         await session.endSession();
         return res.status(400).json({
           message:
@@ -92,8 +87,8 @@ router.post(
         });
       }
       // Get admin role - do this outside transaction as it's just a read
-      const adminRole = await Role.findOne({ name: 'Admin' });
-      if (!adminRole) {
+      const memberRole = await Role.findOne({ name: 'Member' });
+      if (!memberRole) {
         await session.abortTransaction();
         session.endSession();
         return res.status(500).json({
@@ -440,9 +435,6 @@ router.post(
       // If anything fails, abort the transaction
       await session.abortTransaction();
       session.endSession();
-
-      // Log the error for debugging but don't expose details
-      console.error('Super admin creation error:', error);
 
       return res.status(500).json({
         message: 'Failed to create super admin. Please try again later.',

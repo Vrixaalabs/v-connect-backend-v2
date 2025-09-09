@@ -1,7 +1,6 @@
 import { Document } from 'mongoose';
-import { IUser } from '../../models/User';
-import { IInstitute } from '../../models/Institute';
-import { IInstituteUserRole } from '../../models/InstituteUserRole';
+import { IOrganization } from '../../models/Organization';
+import { OrganizationUserRole } from '../../models/OrganizationUserRole';
 
 // Base Response Interface
 export interface BaseResponse {
@@ -100,16 +99,16 @@ export interface SuperAdminSettingsResponse extends BaseResponse {
   settings: SuperAdminSettings;
 }
 
-export interface InstituteResponse extends BaseResponse {
-  institute?: IInstitute & Document;
+export interface OrganizationResponse extends BaseResponse {
+  institute?: IOrganization & Document;
 }
 
-export interface InstituteAdminResponse extends BaseResponse {
-  admin?: IInstituteUserRole & Document;
+export interface OrganizationAdminResponse extends BaseResponse {
+  admin?: OrganizationUserRole & Document;
 }
 
-export interface InstituteAdminsResponse extends BaseResponse {
-  admins: Array<IInstituteUserRole & Document>;
+export interface OrganizationAdminsResponse extends BaseResponse {
+  admins: Array<OrganizationUserRole & Document>;
   total: number;
   page: number;
   limit: number;
@@ -167,7 +166,7 @@ export interface SystemStatus {
 }
 
 // Query Interfaces
-export interface GetInstituteAdminsArgs {
+export interface GetOrganizationAdminsArgs {
   page?: number;
   limit?: number;
   search?: string;
@@ -180,15 +179,15 @@ export interface GetRecentActivitiesArgs {
 // Mutation Interfaces
 export interface AssignAdminInput {
   email: string;
-  instituteId: string;
+  organizationId: string;
 }
 
-export interface UpdateInstituteArgs {
-  instituteId: string;
+export interface UpdateOrganizationArgs {
+  organizationId: string;
   input: {
     name?: string;
     description?: string;
-    location?: string;
+    address?: string;
     website?: string;
     isActive?: boolean;
   };
