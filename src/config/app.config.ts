@@ -36,7 +36,7 @@ export const config = {
     environment: getEnv('NODE_ENV', 'development'),
     port: getNumberEnv('PORT', 8081),
     host: getEnv('HOST', '0.0.0.0'),
-    frontendUrl: getEnv('FRONTEND_URL', 'https://yourdomain.com'),
+    frontendUrl: getEnv('FRONTEND_URL', 'https://app.vrixaa-connect.com'),
     supportEmail: getEnv('SUPPORT_EMAIL', 'support@yourdomain.com'),
   },
 
@@ -103,8 +103,8 @@ export const config = {
   cors: {
     allowedOrigins: getEnv(
       'ALLOWED_ORIGINS',
-      'http://localhost:3000,http://localhost:5173'
-    )?.split(',') || ['http://localhost:3000', 'http://localhost:5173'],
+      'http://localhost:3000,http://localhost:5173,https://app.vrixaa-connect.com'
+    )?.split(',') || ['http://localhost:3000', 'http://localhost:5173', 'https://app.vrixaa-connect.com'],
     credentials: getBoolEnv('CORS_CREDENTIALS', true),
   },
 
