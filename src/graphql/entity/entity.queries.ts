@@ -14,7 +14,6 @@ import {
   IEntityStatsResponse,
   IEntityMember,
   IEntity,
-  MemberStatus,
   IEntityStatusCount,
   IEntityTypeCount,
 } from './entity.interfaces';
@@ -179,7 +178,7 @@ export const entityQueries = {
         .lean()
         .exec();
 
-      console.log("memberEntities", memberEntities);
+      console.log('memberEntities', memberEntities);
 
       if (memberEntities.length === 0) {
         return {
@@ -315,29 +314,45 @@ export const entityQueries = {
     try {
       const entityMembers = await EntityMember.aggregate([
         { $match: { entityId } },
-        { $lookup: { from: 'users', localField: 'userId', foreignField: 'userId', as: 'user' } },
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'userId',
+            foreignField: 'userId',
+            as: 'user',
+          },
+        },
         { $unwind: '$user' },
-        { $lookup: { from: 'roles', localField: 'roleId', foreignField: 'roleId', as: 'role' } },
+        {
+          $lookup: {
+            from: 'roles',
+            localField: 'roleId',
+            foreignField: 'roleId',
+            as: 'role',
+          },
+        },
         { $unwind: '$role' },
-        { $project: {
-          user: {
-            userId: '$user.userId',
-            firstName: '$user.firstName',
-            lastName: '$user.lastName',
-            avatar: '$user.avatar',
+        {
+          $project: {
+            user: {
+              userId: '$user.userId',
+              firstName: '$user.firstName',
+              lastName: '$user.lastName',
+              avatar: '$user.avatar',
+            },
+            role: {
+              roleId: 1,
+              name: 1,
+              permissions: 1,
+            },
+            joinedAt: '$joinedAt',
+            status: '$status',
           },
-          role: {
-            roleId: 1,
-            name: 1,
-            permissions: 1,
-          },
-          joinedAt: '$joinedAt',
-          status: '$status',
-        } },
+        },
       ]);
 
-      console.log("entityMembers", entityMembers);
-      
+      console.log('entityMembers', entityMembers);
+
       return {
         success: true,
         message: 'Entity members retrieved successfully',
@@ -347,7 +362,6 @@ export const entityQueries = {
         limit: entityMembers.length,
         totalPages: 1,
       };
-
     } catch (error) {
       if (error instanceof BaseError) {
         throw error;
@@ -359,7 +373,6 @@ export const entityQueries = {
       });
     }
   },
-  
 
   getEntityStats: async (
     _: unknown,

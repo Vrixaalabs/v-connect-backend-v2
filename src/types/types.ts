@@ -1,4 +1,4 @@
-import { Document, ObjectId, Types } from 'mongoose';
+import { Document } from 'mongoose';
 
 export interface Context {
   isAuthenticated: boolean;
