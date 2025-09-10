@@ -1,3 +1,5 @@
+import { IEntityRequestMetadata } from '@/models/EntityRequest';
+
 // Entity Types
 export enum EntityType {
   CLUB = 'CLUB',
@@ -58,6 +60,7 @@ export interface IEntityMember {
 
 export interface IEntity {
   entityId: string;
+  entityChatId?: string;
   name: string;
   type: EntityType;
   code?: string;
@@ -235,4 +238,33 @@ export interface ICreateEntityMemberMutationInput {
 
 export interface IArchiveEntityMutationInput {
   id: string;
+}
+
+export interface IEntityRequest {
+  entityRequestId: string;
+  entityId: string;
+  userId: string;
+  status: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface ICreateEntityRequestInput {
+  entityId: string;
+  metadata?: IEntityRequestMetadata;
+}
+export interface ICreateEntityRequestMutationInput {
+  input: ICreateEntityRequestInput;
+}
+
+export interface IEntityRequestResponse extends IBaseResponse {
+  entityRequest?: IEntityRequest;
+}
+
+export interface IGetEntityRequestsInput {
+  entityId: string;
+}
+
+export interface IGetEntityRequestsResponse extends IBaseResponse {
+  entityRequests?: IEntityRequest[];
 }

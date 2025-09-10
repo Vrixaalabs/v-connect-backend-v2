@@ -104,7 +104,11 @@ export const config = {
     allowedOrigins: getEnv(
       'ALLOWED_ORIGINS',
       'http://localhost:3000,http://localhost:5173,https://app.vrixaa-connect.com'
-    )?.split(',') || ['http://localhost:3000', 'http://localhost:5173', 'https://app.vrixaa-connect.com'],
+    )?.split(',') || [
+      'http://localhost:3000',
+      'http://localhost:5173',
+      'https://app.vrixaa-connect.com',
+    ],
     credentials: getBoolEnv('CORS_CREDENTIALS', true),
   },
 

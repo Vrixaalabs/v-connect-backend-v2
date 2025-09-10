@@ -1,6 +1,7 @@
 export const entityTypes = `#graphql
   type Entity {
     entityId: String!
+    entityChatId: String
     name: String!
     type: EntityType!
     code: String
@@ -174,12 +175,54 @@ export const entityTypes = `#graphql
     stats: EntityStats!
   }
 
+  type EntityRequest {
+    entityRequestId: String!
+    entityId: String!
+    userId: String!
+    status: String!
+    createdAt: String!
+    updatedAt: String!
+  }
+
+  input EntityRequestMetadataInput {
+    fullName: String!
+    email: String!
+    rollNumber: String!
+    type: String!
+    department: String!
+    batch: String!
+    message: String
+  }
+
+  input CreateEntityRequestInput {
+    entityId: String!
+    metadata: EntityRequestMetadataInput
+  }
+
+  input GetEntityRequestsInput {
+    entityId: String!
+  }
+
+  type EntityRequestsResponse {
+    success: Boolean!
+    message: String!
+    entityRequests: [EntityRequest!]!
+  }
+
+  type EntityRequestResponse {
+    success: Boolean!
+    message: String!
+    entityRequest: EntityRequest
+  }
+
   extend type Query {
     getUserEntities: EntitiesResponse
     getEntityStats(organizationId: String!): EntityStatsResponse
     getEntities(organizationId: String!, type: String, status: String, page: Int!, limit: Int!): EntitiesResponse
     getEntityByEntityId(entityId: String!): EntityResponse
     getEntityMembers(entityId: String!): EntityMembersResponse
+    getEntityRequests(entityId: String!): EntityRequestsResponse
+    getAllEntities: EntitiesResponse
   }
 
   extend type Mutation {
@@ -192,5 +235,6 @@ export const entityTypes = `#graphql
     deleteEntityMember(id: ID!): EntityMemberResponse
     createEntityMember(input: CreateEntityMemberInput!): EntityMemberResponse
     archiveEntity(id: ID!): EntityResponse
+    createEntityRequest(input: CreateEntityRequestInput!): EntityRequestResponse
   }
 `;

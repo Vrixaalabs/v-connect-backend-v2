@@ -10,6 +10,7 @@ import {
 
 export interface IEntity extends Document {
   entityId: string;
+  entityChatId?: string;
   name: string;
   type: EntityType;
   description?: string;
@@ -34,6 +35,12 @@ const entitySchema = new Schema<IEntity>(
       required: true,
       unique: true,
       default: uuidv4,
+    },
+    entityChatId: {
+      type: String,
+      required: false,
+      ref: 'EntityChat',
+      refPath: 'entityId',
     },
     name: {
       type: String,

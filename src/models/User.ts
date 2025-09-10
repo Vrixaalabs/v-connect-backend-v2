@@ -16,6 +16,7 @@ export interface IUser extends Document {
   firstName: string;
   lastName: string;
   password: string;
+  type: 'student' | 'faculty' | 'alumni';
   status: 'active' | 'inactive' | 'suspended';
   role: 'user' | 'admin' | 'super_admin';
   lastLoginAt?: Date;
@@ -110,6 +111,11 @@ const userSchema = new Schema<IUser>(
     lastName: {
       type: String,
       required: true,
+    },
+    type: {
+      type: String,
+      enum: ['student', 'faculty', 'alumni'],
+      default: 'student',
     },
     status: {
       type: String,
