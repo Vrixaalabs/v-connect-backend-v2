@@ -7,6 +7,7 @@ import {
   EntityVisibility,
   MemberStatus,
   IEntity,
+  IEntityRequest,
 } from './entity.interfaces';
 import {
   ICreateEntityMutationInput,
@@ -15,6 +16,8 @@ import {
   IEntityMemberResponse,
   ICreateEntityRequestMutationInput,
   IEntityRequestResponse,
+  IAcceptEntityJoinRequestMutationInput,
+  IRejectEntityJoinRequestMutationInput,
 } from './entity.interfaces';
 import { EntityMember } from '@/models/EntityMember';
 import { Role } from '@/models/Role';
@@ -453,6 +456,103 @@ export const entityMutations = {
       throw createError.database('Failed to create entity request', {
         operation: 'create',
         entityType: 'EntityRequest',
+        error,
+      });
+    }
+  },
+  acceptEntityJoinRequest: async (
+    _: unknown,
+    { requestId }: IAcceptEntityJoinRequestMutationInput,
+    context: GraphQLContext
+  ): Promise<IEntityRequestResponse> => {
+    try {
+      const entityRequest = await EntityRequest.findOneAndUpdate(
+        { 
+          entityRequestId: requestId, 
+          status: 'pending' 
+        },
+        { $set: { status: 'accepted' } },
+        { new: true }
+      );
+
+      if (!entityRequest) {
+        throw createError.notFound('Entity request not found', {
+          entityType: 'EntityRequest',
+          entityRequestId: requestId,
+        });
+      }
+
+      // add user to entitymembers
+      await EntityMember.create({
+        userId: entityRequest.userId,
+        entityId: entityRequest.entityId,
+        roleId: '7e194669-d391-4e58-8279-3695285fdd04',
+        status: MemberStatus.ACTIVE,
+      });
+
+      // update entity metadata
+      const entity = await Entity.findOne({ entityId: entityRequest.entityId });
+      if (!entity) {
+        throw createError.notFound('Entity not found', {
+          entityType: 'Entity',
+          entityId: entityRequest.entityId,
+        });
+      }
+
+      if (entity.metadata) {
+        entity.metadata.totalMembers++;
+      } else {
+        entity.metadata = {
+          totalMembers: 1,
+          totalPosts: 0,
+          totalEvents: 0,
+          lastActivityAt: new Date(),
+        };
+      }
+      await entity.save();
+
+      return {
+        success: true,
+        message: 'Entity request accepted successfully',
+        entityRequest: entityRequest as IEntityRequest,
+      };
+    } catch (error) {
+      if (error instanceof BaseError) {
+        throw error;
+      }
+      throw createError.database('Failed to accept entity request', {
+        operation: 'accept',
+        entityType: 'EntityRequest',
+        entityRequestId: requestId,
+        error,
+      });
+    }
+  },
+  rejectEntityJoinRequest: async (
+    _: unknown,
+    { requestId }: IRejectEntityJoinRequestMutationInput,
+    context: GraphQLContext
+  ): Promise<IEntityRequestResponse> => {
+    try {
+      const entityRequest = await EntityRequest.findOneAndUpdate(
+        { requestId, status: 'pending' },
+        { $set: { status: 'rejected' } },
+        { new: true }
+      );
+
+      return {
+        success: true,
+        message: 'Entity request rejected successfully',
+        entityRequest: entityRequest as IEntityRequest,
+      };
+    } catch (error) {
+      if (error instanceof BaseError) {
+        throw error;
+      }
+      throw createError.database('Failed to reject entity request', {
+        operation: 'reject',
+        entityType: 'EntityRequest',
+        requestId,
         error,
       });
     }
