@@ -547,7 +547,10 @@ export const entityQueries = {
       throw createError.authentication('Not authenticated');
     }
     try {
-      const entityRequests = await EntityRequest.find({ entityId: entityId, status: 'pending' });
+      const entityRequests = await EntityRequest.find({
+        entityId: entityId,
+        status: 'pending',
+      });
 
       console.log('entityRequests', entityRequests);
 

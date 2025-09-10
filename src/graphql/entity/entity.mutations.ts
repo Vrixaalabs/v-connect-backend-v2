@@ -465,11 +465,15 @@ export const entityMutations = {
     { requestId }: IAcceptEntityJoinRequestMutationInput,
     context: GraphQLContext
   ): Promise<IEntityRequestResponse> => {
+    if (!context.isAuthenticated || !context.user) {
+      throw createError.authentication('Not authenticated');
+    }
+
     try {
       const entityRequest = await EntityRequest.findOneAndUpdate(
-        { 
-          entityRequestId: requestId, 
-          status: 'pending' 
+        {
+          entityRequestId: requestId,
+          status: 'pending',
         },
         { $set: { status: 'accepted' } },
         { new: true }
@@ -534,6 +538,10 @@ export const entityMutations = {
     context: GraphQLContext
   ): Promise<IEntityRequestResponse> => {
     try {
+      if (!context.isAuthenticated || !context.user) {
+        throw createError.authentication('Not authenticated');
+      }
+
       const entityRequest = await EntityRequest.findOneAndUpdate(
         { requestId, status: 'pending' },
         { $set: { status: 'rejected' } },
