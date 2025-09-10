@@ -13,9 +13,13 @@ import {
   IUpdateEntityMutationInput,
   IEntityResponse,
   IEntityMemberResponse,
+  ICreateEntityRequestMutationInput,
+  IEntityRequestResponse,
 } from './entity.interfaces';
 import { EntityMember } from '@/models/EntityMember';
 import { Role } from '@/models/Role';
+import { EntityChat } from '@/models/EntityChat';
+import { EntityRequest } from '@/models/EntityRequest';
 
 export const entityMutations = {
   createEntity: async (
@@ -70,6 +74,11 @@ export const entityMutations = {
         userId: context.user.id,
         roleId: role.roleId,
         status: MemberStatus.ACTIVE,
+      });
+
+      await EntityChat.create({
+        entityId: entity.entityId,
+        userId: context.user.id,
       });
 
       return {
@@ -415,6 +424,35 @@ export const entityMutations = {
       throw createError.database('Failed to archive entity', {
         operation: 'archive',
         entityType: 'Entity',
+        error,
+      });
+    }
+  },
+  createEntityRequest: async (
+    _: unknown,
+    { input }: ICreateEntityRequestMutationInput,
+    context: GraphQLContext
+  ): Promise<IEntityRequestResponse> => {
+    try {
+      const entityRequest = await EntityRequest.create({
+        ...input,
+        userId: context.user?.id as string,
+        status: 'pending',
+        metadata: input.metadata,
+      });
+
+      return {
+        success: true,
+        message: 'Entity request created successfully',
+        entityRequest,
+      };
+    } catch (error) {
+      if (error instanceof BaseError) {
+        throw error;
+      }
+      throw createError.database('Failed to create entity request', {
+        operation: 'create',
+        entityType: 'EntityRequest',
         error,
       });
     }

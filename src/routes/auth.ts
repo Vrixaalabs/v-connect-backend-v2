@@ -33,6 +33,7 @@ interface RegisterBody {
   username: string;
   firstName: string;
   lastName: string;
+  type: string;
 }
 
 interface LoginBody {
@@ -45,6 +46,7 @@ interface CreateSuperAdminBody {
   verificationPassword: string;
   secretKey: string;
   email: string;
+  type: string;
   password: string;
   username: string;
   firstName: string;
@@ -60,14 +62,21 @@ router.post(
     session.startTransaction();
 
     try {
-      const { email, password, username, firstName, lastName } = req.body;
+      const { email, password, username, firstName, lastName, type } = req.body;
 
       // Validate request body
-      if (!email || !password || !username || !firstName || !lastName) {
+      if (
+        !email ||
+        !password ||
+        !username ||
+        !firstName ||
+        !lastName ||
+        !type
+      ) {
         await session.endSession();
         return res.status(400).json({
           message:
-            'All fields are required: email, password, username, firstName, lastName',
+            'All fields are required: email, password, username, firstName, lastName, type',
         });
       }
 
@@ -106,6 +115,7 @@ router.post(
             username: username.toLowerCase(),
             firstName,
             lastName,
+            type,
           },
         ],
         { session }
@@ -134,6 +144,7 @@ router.post(
           username: user.username,
           firstName: user.firstName,
           lastName: user.lastName,
+          type: user.type,
         },
       });
     } catch (error) {
@@ -210,6 +221,7 @@ router.get('/me', verifyAccessToken, async (req: Request, res: Response) => {
         username: user.username,
         firstName: user.firstName,
         lastName: user.lastName,
+        type: user.type,
       },
     });
   } catch (error) {
@@ -332,6 +344,7 @@ router.post(
         username,
         firstName,
         lastName,
+        type,
       } = req.body;
 
       // Verify the predefined credentials
@@ -348,12 +361,19 @@ router.post(
       }
 
       // Validate request body
-      if (!email || !password || !username || !firstName || !lastName) {
+      if (
+        !email ||
+        !password ||
+        !username ||
+        !firstName ||
+        !lastName ||
+        !type
+      ) {
         await session.abortTransaction();
         session.endSession();
         return res.status(400).json({
           message:
-            'All fields are required: email, password, username, firstName, lastName',
+            'All fields are required: email, password, username, firstName, lastName, type',
         });
       }
 

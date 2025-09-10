@@ -16,7 +16,12 @@ import {
   IEntity,
   IEntityStatusCount,
   IEntityTypeCount,
+  IEntityRequest,
+  IGetEntityRequestsResponse,
+  IGetEntityRequestsInput,
 } from './entity.interfaces';
+import { EntityChat } from '@/models/EntityChat';
+import { EntityRequest } from '@/models/EntityRequest';
 
 export const entityQueries = {
   getEntities: async (
@@ -144,6 +149,25 @@ export const entityQueries = {
       }
 
       const entity = await Entity.findOne({ entityId });
+
+      if (!entity) {
+        throw createError.notFound('Entity not found', {
+          entityType: 'Entity',
+          entityId,
+        });
+      }
+
+      const entityChat = await EntityChat.findOne({
+        entityId: entity?.entityId,
+      });
+
+      if (!entityChat) {
+        throw createError.notFound('Entity chat not found', {
+          entityType: 'EntityChat',
+          entityId,
+        });
+      }
+      entity.entityChatId = entityChat.entityChatId;
 
       return {
         success: true,
@@ -452,6 +476,66 @@ export const entityQueries = {
           averageMembersPerEntity: 0,
         },
       };
+    }
+  },
+  getEntityRequests: async (
+    _: unknown,
+    { entityId }: IGetEntityRequestsInput,
+    context: GraphQLContext
+  ): Promise<IGetEntityRequestsResponse> => {
+    if (!context.isAuthenticated || !context.user) {
+      throw createError.authentication('Not authenticated');
+    }
+
+    try {
+      const entityRequests = await EntityRequest.find({ entityId: entityId });
+
+      return {
+        success: true,
+        message: 'Entity requests retrieved successfully',
+        entityRequests: entityRequests as IEntityRequest[],
+      };
+    } catch (error) {
+      if (error instanceof BaseError) {
+        throw error;
+      }
+      throw createError.database('Failed to get entity requests', {
+        operation: 'getEntityRequests',
+        entityType: 'EntityRequest',
+        error,
+      });
+    }
+  },
+  getAllEntities: async (
+    _: unknown,
+    __: unknown,
+    context: GraphQLContext
+  ): Promise<IEntitiesResponse> => {
+    if (!context.isAuthenticated || !context.user) {
+      throw createError.authentication('Not authenticated');
+    }
+
+    try {
+      const entities = await Entity.find();
+
+      return {
+        success: true,
+        message: 'Entities retrieved successfully',
+        entities: entities as IEntity[],
+        total: entities.length,
+        page: 1,
+        limit: entities.length,
+        totalPages: 1,
+      };
+    } catch (error) {
+      if (error instanceof BaseError) {
+        throw error;
+      }
+      throw createError.database('Failed to get all entities', {
+        operation: 'getAllEntities',
+        entityType: 'Entity',
+        error,
+      });
     }
   },
 };
