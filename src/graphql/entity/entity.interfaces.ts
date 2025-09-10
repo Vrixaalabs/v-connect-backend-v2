@@ -268,3 +268,11 @@ export interface IGetEntityRequestsInput {
 export interface IGetEntityRequestsResponse extends IBaseResponse {
   entityRequests?: IEntityRequest[];
 }
+
+export interface IAcceptEntityJoinRequestMutationInput {
+  requestId: string;
+}
+
+export interface IRejectEntityJoinRequestMutationInput {
+  requestId: string;
+}

@@ -175,6 +175,16 @@ export const entityTypes = `#graphql
     stats: EntityStats!
   }
 
+  type EntityRequestMetadata {
+    fullName: String!
+    email: String!
+    rollNumber: String!
+    type: String!
+    department: String!
+    batch: String!
+    message: String
+  }
+
   type EntityRequest {
     entityRequestId: String!
     entityId: String!
@@ -182,6 +192,7 @@ export const entityTypes = `#graphql
     status: String!
     createdAt: String!
     updatedAt: String!
+    metadata: EntityRequestMetadata
   }
 
   input EntityRequestMetadataInput {
@@ -202,6 +213,7 @@ export const entityTypes = `#graphql
   input GetEntityRequestsInput {
     entityId: String!
   }
+  
 
   type EntityRequestsResponse {
     success: Boolean!
@@ -223,6 +235,7 @@ export const entityTypes = `#graphql
     getEntityMembers(entityId: String!): EntityMembersResponse
     getEntityRequests(entityId: String!): EntityRequestsResponse
     getAllEntities: EntitiesResponse
+    getRequestByEntityId(entityId: String!): EntityRequestsResponse
   }
 
   extend type Mutation {
@@ -236,5 +249,7 @@ export const entityTypes = `#graphql
     createEntityMember(input: CreateEntityMemberInput!): EntityMemberResponse
     archiveEntity(id: ID!): EntityResponse
     createEntityRequest(input: CreateEntityRequestInput!): EntityRequestResponse
+    acceptEntityJoinRequest(requestId: String!): EntityRequestResponse
+    rejectEntityJoinRequest(requestId: String!): EntityRequestResponse
   }
 `;

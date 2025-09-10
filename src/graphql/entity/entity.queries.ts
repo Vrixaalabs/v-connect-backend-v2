@@ -538,4 +538,36 @@ export const entityQueries = {
       });
     }
   },
+  getRequestByEntityId: async (
+    _: unknown,
+    { entityId }: IGetEntityRequestsInput,
+    context: GraphQLContext
+  ): Promise<IGetEntityRequestsResponse> => {
+    if (!context.isAuthenticated || !context.user) {
+      throw createError.authentication('Not authenticated');
+    }
+    try {
+      const entityRequests = await EntityRequest.find({
+        entityId: entityId,
+        status: 'pending',
+      });
+
+      console.log('entityRequests', entityRequests);
+
+      return {
+        success: true,
+        message: 'Entity requests retrieved successfully',
+        entityRequests: entityRequests,
+      };
+    } catch (error) {
+      if (error instanceof BaseError) {
+        throw error;
+      }
+      throw createError.database('Failed to get entity requests', {
+        operation: 'getRequestByEntityId',
+        entityType: 'EntityRequest',
+        error,
+      });
+    }
+  },
 };
