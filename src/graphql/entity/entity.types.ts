@@ -8,6 +8,7 @@ export const entityTypes = `#graphql
     description: String
     organizationId: String
     parentEntityId: String
+    parentEntityName: String
     status: EntityStatus!
     logo: String
     banner: String
@@ -19,17 +20,17 @@ export const entityTypes = `#graphql
     updatedAt: String!
   }
 
-  type EntityMemberRole {
+  type Role {
     roleId: String!
     name: String!
     permissions: [String!]!
   }
 
-  type EntityMember {
+  type EntityUserRole {
     user: User!
-    role: EntityMemberRole
+    role: Role!
     joinedAt: String!
-    status: MemberStatus!
+    status: UserStatus!
   }
 
   type EntitySettings {
@@ -49,10 +50,12 @@ export const entityTypes = `#graphql
   }
 
   enum EntityType {
-    CLUB
+    INSTITUTE
+    SCHOOL
     DEPARTMENT
-    COMMITTEE
+    CLUB
     TEAM
+    OTHER
   }
 
   enum EntityStatus {
@@ -61,7 +64,7 @@ export const entityTypes = `#graphql
     ARCHIVED
   }
 
-  enum MemberStatus {
+  enum UserStatus {
     ACTIVE
     INACTIVE
   }
@@ -103,14 +106,14 @@ export const entityTypes = `#graphql
     allowAnnouncements: Boolean
   }
 
-  input AddEntityMemberInput {
+  input AddEntityUserRoleInput {
     userId: String!
     role: String!
   }
 
-  input UpdateEntityMemberInput {
+  input UpdateEntityUserRoleInput {
     role: String
-    status: MemberStatus
+    status: UserStatus
   }
 
   type EntityResponse {
@@ -129,16 +132,16 @@ export const entityTypes = `#graphql
     totalPages: Int!
   }
 
-  type EntityMemberResponse {
+  type EntityUserRoleResponse {
     success: Boolean!
     message: String!
-    member: EntityMember
+    user: EntityUserRole
   }
 
-  type EntityMembersResponse {
+  type EntityUserRolesResponse {
     success: Boolean!
     message: String!
-    members: [EntityMember!]!
+    users: [EntityUserRole!]!
     total: Int!
     page: Int!
     limit: Int!
@@ -149,12 +152,12 @@ export const entityTypes = `#graphql
     totalEntities: Int!
     entitiesByType: [EntityTypeCount!]!
     entitiesByStatus: [EntityStatusCount!]!
-    totalMembers: Int!
-    activeMembers: Int!
-    averageMembersPerEntity: Float!
+    totalUsers: Int!
+    activeUsers: Int!
+    averageUsersPerEntity: Float!
   }
 
-  input CreateEntityMemberInput {
+  input CreateEntityUserRoleInput {
     userId: String!
     role: String!
   }
@@ -232,7 +235,7 @@ export const entityTypes = `#graphql
     getEntityStats(organizationId: String!): EntityStatsResponse
     getEntities(organizationId: String!, type: String, status: String, page: Int!, limit: Int!): EntitiesResponse
     getEntityByEntityId(entityId: String!): EntityResponse
-    getEntityMembers(entityId: String!): EntityMembersResponse
+    getEntityUserRoles(entityId: String!): EntityUserRolesResponse
     getEntityRequests(entityId: String!): EntityRequestsResponse
     getAllEntities: EntitiesResponse
     getRequestByEntityId(entityId: String!): EntityRequestsResponse
@@ -242,11 +245,9 @@ export const entityTypes = `#graphql
     createEntity(input: CreateEntityInput!): EntityResponse
     updateEntity(id: ID!, input: UpdateEntityInput!): EntityResponse
     deleteEntity(id: ID!): EntityResponse
-    # addEntityMember(input: AddEntityMemberInput!): EntityMemberResponse
-    # updateEntityMember(id: ID!, input: UpdateEntityMemberInput!): EntityMemberResponse
-    removeEntityMember(id: ID!): EntityMemberResponse
-    deleteEntityMember(id: ID!): EntityMemberResponse
-    createEntityMember(input: CreateEntityMemberInput!): EntityMemberResponse
+    removeEntityMember(id: ID!): EntityUserRoleResponse
+    deleteEntityMember(id: ID!): EntityUserRoleResponse
+    createEntityMember(input: CreateEntityUserRoleInput!): EntityUserRoleResponse
     archiveEntity(id: ID!): EntityResponse
     createEntityRequest(input: CreateEntityRequestInput!): EntityRequestResponse
     acceptEntityJoinRequest(requestId: String!): EntityRequestResponse

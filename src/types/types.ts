@@ -28,6 +28,7 @@ export interface IInvite extends Document {
   rollNumber: string;
   batch: string;
   role: string;
+  type: string;
   createdAt?: Date;
   updatedAt?: Date;
 }

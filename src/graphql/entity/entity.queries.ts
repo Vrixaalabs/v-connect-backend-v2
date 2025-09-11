@@ -1,18 +1,18 @@
 import { Entity } from '@/models/Entity';
-import { EntityMember } from '@/models/EntityMember';
+import { EntityUserRole } from '@/models/EntityUserRole';
 import { GraphQLContext } from '../context';
 import { createError } from '@/middleware/errorHandler';
 import { BaseError } from '@/types/errors/base.error';
 import {
   IGetEntitiesInput,
   IGetEntityInput,
-  IGetEntityMembersInput,
+  IGetEntityUserRolesInput,
   IGetEntityStatsInput,
   IEntitiesResponse,
   IEntityResponse,
-  IEntityMembersResponse,
+  IEntityUserRolesResponse,
   IEntityStatsResponse,
-  IEntityMember,
+  IEntityUserRole,
   IEntity,
   IEntityStatusCount,
   IEntityTypeCount,
@@ -148,7 +148,7 @@ export const entityQueries = {
         throw createError.authentication('Not authenticated');
       }
 
-      const entity = await Entity.findOne({ entityId });
+      const entity = await Entity.findOne({ entityId }).lean();
 
       if (!entity) {
         throw createError.notFound('Entity not found', {
@@ -156,6 +156,8 @@ export const entityQueries = {
           entityId,
         });
       }
+
+      const parentEntity = await Entity.findOne({ entityId: entity.parentEntityId });
 
       const entityChat = await EntityChat.findOne({
         entityId: entity?.entityId,
@@ -167,12 +169,17 @@ export const entityQueries = {
           entityId,
         });
       }
-      entity.entityChatId = entityChat.entityChatId;
+
+      const formattedEntity = {
+        ...entity,
+        parentEntityName: parentEntity?.name || '',
+        entityChatId: entityChat.entityChatId,
+      }
 
       return {
         success: true,
         message: 'Entity retrieved successfully',
-        entity: entity as IEntity,
+        entity: formattedEntity,
       };
     } catch (error) {
       if (error instanceof BaseError) {
@@ -196,15 +203,15 @@ export const entityQueries = {
         throw createError.authentication('Not authenticated');
       }
 
-      const memberEntities = await EntityMember.find({
+      const userEntities = await EntityUserRole.find({
         userId: context.user.id,
       })
         .lean()
         .exec();
 
-      console.log('memberEntities', memberEntities);
+      console.log('userEntities', userEntities);
 
-      if (memberEntities.length === 0) {
+      if (userEntities.length === 0) {
         return {
           success: true,
           message: 'Entities retrieved successfully',
@@ -218,7 +225,7 @@ export const entityQueries = {
 
       const entities = await Entity.find({
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        entityId: { $in: memberEntities.map((me: any) => me.entityId) },
+        entityId: { $in: userEntities.map((me: any) => me.entityId) },
       })
         .lean()
         .exec();
@@ -250,93 +257,23 @@ export const entityQueries = {
       }
       throw createError.database('Failed to get user entities', {
         operation: 'getUserEntities',
-        entityType: 'EntityMembers',
+        entityType: 'EntityUserRoles',
         error,
       });
     }
   },
 
-  // getEntityMembers: async (
-  //   _: unknown,
-  //   { entityId, status, role, page = 1, limit = 10 }: IGetEntityMembersInput,
-  //   { isAuthenticated }: GraphQLContext
-  // ): Promise<IEntityMembersResponse> => {
-  //   try {
-  //     if (!isAuthenticated) {
-  //       throw new Error('Not authenticated');
-  //     }
-
-  //     const entity = await Entity.findOne({ entityId });
-  //     if (!entity) {
-  //       throw new Error('Entity not found');
-  //     }
-
-  //     const entityMembers = entity.get('members') || [];
-  //     let filteredMembers = [...entityMembers];
-
-  //     if (status) {
-  //       filteredMembers = filteredMembers.filter(
-  //         (member: IEntityMember) => member.status === status.toUpperCase()
-  //       ) as IEntityMember[];
-  //     }
-
-  //     if (role) {
-  //       filteredMembers = filteredMembers.filter(
-  //         (member: IEntityMember) => member.role === role.toUpperCase()
-  //       ) as IEntityMember[];
-  //     }
-
-  //     const total = filteredMembers.length;
-  //     const totalPages = Math.ceil(total / limit);
-  //     const paginatedMembers = filteredMembers.slice(
-  //       (page - 1) * limit,
-  //       page * limit
-  //     );
-
-  //     // Convert to IEntityMember array
-  //     const members: IEntityMember[] = paginatedMembers.map(
-  //       (member: IEntityMember) => ({
-  //         userId: member.userId,
-  //         role: member.role,
-  //         joinedAt: member.joinedAt,
-  //         status: member.status as MemberStatus,
-  //       })
-  //     );
-
-  //     return {
-  //       success: true,
-  //       message: 'Members retrieved successfully',
-  //       members,
-  //       total,
-  //       page,
-  //       limit,
-  //       totalPages,
-  //     };
-  //   } catch (error) {
-  //     return {
-  //       success: false,
-  //       message:
-  //         error instanceof Error ? error.message : 'An unknown error occurred',
-  //       members: [],
-  //       total: 0,
-  //       page,
-  //       limit,
-  //       totalPages: 0,
-  //     };
-  //   }
-  // },
-
-  getEntityMembers: async (
+  getEntityUserRoles: async (
     _: unknown,
-    { entityId }: IGetEntityMembersInput,
+    { entityId }: IGetEntityUserRolesInput,
     context: GraphQLContext
-  ): Promise<IEntityMembersResponse> => {
+  ): Promise<IEntityUserRolesResponse> => {
     if (!context.isAuthenticated || !context.user) {
       throw createError.authentication('Not authenticated');
     }
 
     try {
-      const entityMembers = await EntityMember.aggregate([
+      const entityMembers = await EntityUserRole.aggregate([
         { $match: { entityId } },
         {
           $lookup: {
@@ -380,7 +317,7 @@ export const entityQueries = {
       return {
         success: true,
         message: 'Entity members retrieved successfully',
-        members: entityMembers as IEntityMember[],
+        members: entityMembers as IEntityUserRole[],
         total: entityMembers.length,
         page: 1,
         limit: entityMembers.length,
@@ -390,8 +327,8 @@ export const entityQueries = {
       if (error instanceof BaseError) {
         throw error;
       }
-      throw createError.database('Failed to get entity members', {
-        operation: 'getEntityMembers',
+      throw createError.database('Failed to get entity user roles', {
+        operation: 'getEntityUserRoles',
         entityType: 'Entity',
         error,
       });
@@ -412,8 +349,8 @@ export const entityQueries = {
         totalEntities,
         entitiesByType,
         entitiesByStatus,
-        totalMembers,
-        activeMembers,
+        totalUsers,
+        activeUsers,
       ] = await Promise.all([
         Entity.countDocuments({ organizationId: organizationId || '' }),
         Entity.aggregate([
@@ -428,14 +365,14 @@ export const entityQueries = {
         ]),
         Entity.aggregate([
           { $match: { organizationId } },
-          { $unwind: '$members' },
+          { $unwind: '$users' },
           { $group: { _id: null, total: { $sum: 1 } } },
         ]),
         Entity.aggregate([
           { $match: { organizationId: organizationId || '' } },
-          { $unwind: '$members' },
+          { $unwind: '$users' },
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          { $match: { 'members.status': 'active' as any } },
+          { $match: { 'users.status': 'active' as any } },
           { $group: { _id: null, total: { $sum: 1 } } },
         ]),
       ]);
@@ -450,10 +387,10 @@ export const entityQueries = {
           status: item.status,
           count: item.count,
         })),
-        totalMembers: totalMembers[0]?.total || 0,
-        activeMembers: activeMembers[0]?.total || 0,
-        averageMembersPerEntity: totalEntities
-          ? (totalMembers[0]?.total || 0) / totalEntities
+        totalUsers: totalUsers[0]?.total || 0,
+        activeUsers: activeUsers[0]?.total || 0,
+        averageUsersPerEntity: totalEntities
+          ? (totalUsers[0]?.total || 0) / totalEntities
           : 0,
       };
 
@@ -471,9 +408,9 @@ export const entityQueries = {
           totalEntities: 0,
           entitiesByType: [],
           entitiesByStatus: [],
-          totalMembers: 0,
-          activeMembers: 0,
-          averageMembersPerEntity: 0,
+          totalUsers: 0,
+          activeUsers: 0,
+          averageUsersPerEntity: 0,
         },
       };
     }

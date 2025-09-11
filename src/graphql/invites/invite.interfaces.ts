@@ -46,19 +46,20 @@ export interface MyEntityInvitesResponse extends IBaseResponse {
   invites: InviteWithEntity[];
 }
 
-export interface InviteEntityMemberInput {
+export interface InviteEntityUserRoleInput {
   entityId: string;
   email: string;
   rollNumber: string;
   batch: string;
   role: string;
+  type: string;
 }
 
-export interface InviteEntityMemberArgs {
-  input: InviteEntityMemberInput;
+export interface InviteEntityUserRoleArgs {
+  input: InviteEntityUserRoleInput;
 }
 
-export interface InviteEntityMemberResponse {
+export interface InviteEntityUserRoleResponse {
   success: boolean;
   message: string;
   invite: IInvite;

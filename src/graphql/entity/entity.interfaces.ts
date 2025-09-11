@@ -2,10 +2,12 @@ import { IEntityRequestMetadata } from '@/models/EntityRequest';
 
 // Entity Types
 export enum EntityType {
-  CLUB = 'CLUB',
+  INSTITUTE = 'INSTITUTE',
+  SCHOOL = 'SCHOOL',
   DEPARTMENT = 'DEPARTMENT',
-  COMMITTEE = 'COMMITTEE',
+  CLUB = 'CLUB',
   TEAM = 'TEAM',
+  OTHER = 'OTHER',
 }
 
 export enum EntityStatus {
@@ -14,7 +16,7 @@ export enum EntityStatus {
   ARCHIVED = 'ARCHIVED',
 }
 
-export enum MemberStatus {
+export enum UserStatus {
   ACTIVE = 'ACTIVE',
   INACTIVE = 'INACTIVE',
 }
@@ -42,7 +44,7 @@ export interface IEntityMetadata {
   lastActivityAt?: Date;
 }
 
-export interface IEntityMember {
+export interface IEntityUserRole {
   user: {
     userId: string;
     firstName: string;
@@ -55,7 +57,7 @@ export interface IEntityMember {
     permissions: string[];
   };
   joinedAt: Date;
-  status: MemberStatus;
+  status: UserStatus;
 }
 
 export interface IEntity {
@@ -67,6 +69,7 @@ export interface IEntity {
   description?: string;
   organizationId?: string;
   parentEntityId?: string;
+  parentEntityName?: string;
   status: EntityStatus;
   logo?: string;
   banner?: string;
@@ -111,18 +114,18 @@ export interface IUpdateEntityInput {
   settings?: IEntitySettingsInput;
 }
 
-export interface IAddEntityMemberInput {
+export interface IAddEntityUserRoleInput {
   entityId: string;
   userId: string;
   role: string;
 }
 
-export interface IUpdateEntityMemberInput {
+export interface IUpdateEntityUserRoleInput {
   role?: string;
-  status?: MemberStatus;
+  status?: UserStatus;
 }
 
-export interface ICreateEntityMemberInput {
+export interface ICreateEntityUserRoleInput {
   userId: string;
   role: string;
 }
@@ -140,7 +143,7 @@ export interface IGetEntityInput {
   entityId: string;
 }
 
-export interface IGetEntityMembersInput {
+export interface IGetEntityUserRolesInput {
   entityId: string;
   status?: string;
   role?: string;
@@ -167,9 +170,9 @@ export interface IEntityStats {
   totalEntities: number;
   entitiesByType: IEntityTypeCount[];
   entitiesByStatus: IEntityStatusCount[];
-  totalMembers: number;
-  activeMembers: number;
-  averageMembersPerEntity: number;
+  totalUsers: number;
+  activeUsers: number;
+  averageUsersPerEntity: number;
 }
 
 export interface IBaseResponse {
@@ -189,12 +192,12 @@ export interface IEntitiesResponse extends IBaseResponse {
   totalPages: number;
 }
 
-export interface IEntityMemberResponse extends IBaseResponse {
-  member?: IEntityMember;
+export interface IEntityUserRoleResponse extends IBaseResponse {
+  user?: IEntityUserRole;
 }
 
-export interface IEntityMembersResponse extends IBaseResponse {
-  members: IEntityMember[];
+export interface IEntityUserRolesResponse extends IBaseResponse {
+  members: IEntityUserRole[];
   total: number;
   page: number;
   limit: number;
@@ -219,21 +222,21 @@ export interface IDeleteEntityMutationInput {
   id: string;
 }
 
-export interface IAddEntityMemberMutationInput {
-  input: IAddEntityMemberInput;
+export interface IAddEntityUserRoleMutationInput {
+  input: IAddEntityUserRoleInput;
 }
 
-export interface IUpdateEntityMemberMutationInput {
+export interface IUpdateEntityUserRoleMutationInput {
   id: string;
-  input: IUpdateEntityMemberInput;
+  input: IUpdateEntityUserRoleInput;
 }
 
-export interface IRemoveEntityMemberMutationInput {
+export interface IRemoveEntityUserRoleMutationInput {
   id: string;
 }
 
-export interface ICreateEntityMemberMutationInput {
-  input: ICreateEntityMemberInput;
+export interface ICreateEntityUserRoleMutationInput {
+  input: ICreateEntityUserRoleInput;
 }
 
 export interface IArchiveEntityMutationInput {

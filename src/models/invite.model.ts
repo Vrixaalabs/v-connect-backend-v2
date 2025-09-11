@@ -46,6 +46,10 @@ const inviteSchema = new Schema<IInvite>(
       type: String,
       required: true,
     },
+    type: {
+      type: String,
+      required: true,
+    },
   },
   { timestamps: true }
 );

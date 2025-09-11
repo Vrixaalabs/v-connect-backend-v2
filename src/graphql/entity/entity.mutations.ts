@@ -5,21 +5,21 @@ import { createError } from '@/middleware/errorHandler';
 import {
   EntityStatus,
   EntityVisibility,
-  MemberStatus,
   IEntity,
   IEntityRequest,
+  UserStatus,
 } from './entity.interfaces';
 import {
   ICreateEntityMutationInput,
   IUpdateEntityMutationInput,
   IEntityResponse,
-  IEntityMemberResponse,
+  IEntityUserRoleResponse,
   ICreateEntityRequestMutationInput,
   IEntityRequestResponse,
   IAcceptEntityJoinRequestMutationInput,
   IRejectEntityJoinRequestMutationInput,
 } from './entity.interfaces';
-import { EntityMember } from '@/models/EntityMember';
+import { EntityUserRole } from '@/models/EntityUserRole';
 import { Role } from '@/models/Role';
 import { EntityChat } from '@/models/EntityChat';
 import { EntityRequest } from '@/models/EntityRequest';
@@ -72,11 +72,11 @@ export const entityMutations = {
       }
 
       // Create entity member record
-      await EntityMember.create({
+      await EntityUserRole.create({
         entityId: entity.entityId,
         userId: context.user.id,
         roleId: role.roleId,
-        status: MemberStatus.ACTIVE,
+        status: UserStatus.ACTIVE,
       });
 
       await EntityChat.create({
@@ -167,163 +167,11 @@ export const entityMutations = {
     }
   },
 
-  // addEntityMember: async (
-  //   _: unknown,
-  //   { input }: IAddEntityMemberMutationInput,
-  //   { isAuthenticated, user }: GraphQLContext
-  // ): Promise<IEntityMemberResponse> => {
-  //   try {
-  //     if (!isAuthenticated) {
-  //       throw new Error('Not authenticated');
-  //     }
-
-  //     const entity = await Entity.findOne({ entityId: input.entityId });
-  //     if (!entity) {
-  //       throw new Error('Entity not found');
-  //     }
-
-  //     // Check if user has permission to add members
-  //     if (!user) {
-  //       throw new Error('User not found');
-  //     }
-
-  //     const members = entity.get('members') || [];
-  //     // const isAdmin = members.some(
-  //     //   member =>
-  //     //     member.userId === user.id &&
-  //     //     member.status === MemberStatus.ACTIVE &&
-  //     //     member.role.toLowerCase() === 'admin'
-  //     // );
-
-  //     // if (!isAdmin) {
-  //     //   throw new Error('Permission denied');
-  //     // }
-
-  //     // // Check if user is already a member
-  //     // if (members.some(member => member.userId === input.userId)) {
-  //     //   throw new Error('User is already a member');
-  //     // }
-
-  //     const newMember = {
-  //       userId: input.userId,
-  //       role: input.role,
-  //       joinedAt: new Date(),
-  //       status: MemberStatus.ACTIVE,
-  //     };
-
-  //     entity.set('members', [...members, newMember]);
-
-  //     const metadata = entity.get('metadata') || {
-  //       totalMembers: 0,
-  //       totalPosts: 0,
-  //       totalEvents: 0,
-  //       lastActivityAt: new Date(),
-  //     };
-  //     entity.set('metadata', {
-  //       ...metadata,
-  //       totalMembers: metadata.totalMembers + 1,
-  //       lastActivityAt: new Date(),
-  //     } as IEntityMetadata);
-
-  //     await entity.save();
-
-  //     return {
-  //       success: true,
-  //       message: 'Member added successfully',
-  //       member: newMember,
-  //     };
-  //   } catch (error) {
-  //     if (error instanceof BaseError) {
-  //       throw error;
-  //     }
-  //     throw createError.database('Failed to add entity member', {
-  //       operation: 'add',
-  //       entityType: 'Entity',
-  //       error,
-  //     });
-  //   }
-  // },
-
-  // updateEntityMember: async (
-  //   _: unknown,
-  //   __: unknown,
-  //   { isAuthenticated }: GraphQLContext
-  // ): Promise<IEntityMemberResponse> => {
-  //   try {
-  //     if (!isAuthenticated) {
-  //       throw new Error('Not authenticated');
-  //     }
-
-  //     const entity = await Entity.findOne({ entityId: '' });
-  //     if (!entity) {
-  //       throw new Error('Entity not found');
-  //     }
-
-  //     // Check if user has permission to update members
-  //     // const isAdmin = entity.members?.some(
-  //     //   member =>
-  //     //     member.userId === user?.id &&
-  //     //     member.status === MemberStatus.ACTIVE &&
-  //     //     member.role.toLowerCase() === 'admin'
-  //     // );
-
-  //     // if (!isAdmin) {
-  //     //   throw new Error('Permission denied');
-  //     // }
-
-  //     // const memberIndex = entity.members?.findIndex(
-  //     //   member => member.userId === userId
-  //     // );
-  //     // if (memberIndex === -1) {
-  //     //   throw new Error('Member not found');
-  //     // }
-
-  //     // const updatedMember = {
-  //     //   ...entity.members[memberIndex],
-  //     //   ...input,
-  //     // };
-
-  //     // entity.members[memberIndex] = updatedMember;
-
-  //     // // Update metadata if status changed
-  //     // if (input.status && input.status !== entity.members[memberIndex].status) {
-  //     //   entity.metadata = {
-  //     //     ...entity.metadata,
-  //     //     totalMembers: members.filter(m => m.status === MemberStatus.ACTIVE)
-  //     //       .length,
-  //     //     lastActivityAt: new Date(),
-  //     //   };
-  //     // }
-
-  //     await entity.save();
-
-  //     return {
-  //       success: true,
-  //       message: 'Member updated successfully',
-  //       member: {
-  //         userId: '',
-  //         role: '',
-  //         joinedAt: new Date(),
-  //         status: MemberStatus.ACTIVE,
-  //       },
-  //     };
-  //   } catch (error) {
-  //     if (error instanceof BaseError) {
-  //       throw error;
-  //     }
-  //     throw createError.database('Failed to update entity member', {
-  //       operation: 'update',
-  //       entityType: 'Entity',
-  //       error,
-  //     });
-  //   }
-  // },
-
   removeEntityMember: async (
     _: unknown,
     __: unknown,
     { isAuthenticated }: GraphQLContext
-  ): Promise<IEntityMemberResponse> => {
+  ): Promise<IEntityUserRoleResponse> => {
     try {
       if (!isAuthenticated) {
         throw new Error('Not authenticated');
@@ -333,38 +181,6 @@ export const entityMutations = {
       if (!entity) {
         throw new Error('Entity not found');
       }
-
-      // Check if user has permission to remove members
-      // const isAdmin = entity.members?.some(
-      //   member =>
-      //     member.userId === user?.id &&
-      //     member.status === MemberStatus.ACTIVE &&
-      //     member.role.toLowerCase() === 'admin'
-      // );
-
-      // // Allow users to remove themselves
-      // const isSelf = user?.id === userId;
-
-      // if (!isAdmin && !isSelf) {
-      //   throw new Error('Permission denied');
-      // }
-
-      // const memberIndex = entity.members?.findIndex(
-      //   member => member.userId === userId
-      // );
-      // if (memberIndex === -1) {
-      //   throw new Error('Member not found');
-      // }
-
-      // const members = entity.get('members') || [];
-      // members.splice(memberIndex, 1);
-      // entity.set('members', members);
-      // entity.metadata = {
-      //   ...entity.metadata,
-      //   totalMembers: members.filter(m => m.status === MemberStatus.ACTIVE)
-      //     .length,
-      //   lastActivityAt: new Date(),
-      // };
 
       await entity.save();
 
@@ -487,11 +303,11 @@ export const entityMutations = {
       }
 
       // add user to entitymembers
-      await EntityMember.create({
+      await EntityUserRole.create({
         userId: entityRequest.userId,
         entityId: entityRequest.entityId,
         roleId: '7e194669-d391-4e58-8279-3695285fdd04',
-        status: MemberStatus.ACTIVE,
+        status: UserStatus.ACTIVE,
       });
 
       // update entity metadata

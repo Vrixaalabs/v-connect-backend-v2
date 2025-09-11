@@ -1,18 +1,18 @@
 import mongoose, { Document, Schema } from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
-import { MemberStatus } from '@/graphql/entity/entity.interfaces';
+import { UserStatus } from '@/graphql/entity/entity.interfaces';
 
-export interface IEntityMember extends Document {
-  entityMemberId: string;
+export interface IEntityUserRole extends Document {
+  entityUserId: string;
   entityId: string;
   userId: string;
   roleId: string;
   joinedAt: Date;
-  status: MemberStatus;
+  status: UserStatus;
 }
 
-const entityMemberSchema = new Schema<IEntityMember>({
-  entityMemberId: {
+const entityUserRoleSchema = new Schema<IEntityUserRole>({
+  entityUserId: {
     type: String,
     required: true,
     default: uuidv4,
@@ -47,17 +47,17 @@ const entityMemberSchema = new Schema<IEntityMember>({
   },
   status: {
     type: String,
-    enum: Object.values(MemberStatus),
-    default: MemberStatus.ACTIVE,
+    enum: Object.values(UserStatus),
+    default: UserStatus.ACTIVE,
   },
 });
 
 // Create indexes for better query performance
-entityMemberSchema.index({ entityId: 1, userId: 1 }, { unique: true });
-entityMemberSchema.index({ userId: 1 });
-entityMemberSchema.index({ roleId: 1 });
+entityUserRoleSchema.index({ entityId: 1, userId: 1 }, { unique: true });
+entityUserRoleSchema.index({ userId: 1 });
+entityUserRoleSchema.index({ roleId: 1 });
 
-export const EntityMember = mongoose.model<IEntityMember>(
-  'EntityMember',
-  entityMemberSchema
+export const EntityUserRole = mongoose.model<IEntityUserRole>(
+  'EntityUserRole',
+  entityUserRoleSchema
 );

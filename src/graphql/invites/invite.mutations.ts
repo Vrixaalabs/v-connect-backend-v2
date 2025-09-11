@@ -3,22 +3,22 @@ import { InviteModel } from '@/models/invite.model';
 import { BaseError } from '../../types/errors/base.error';
 import { GraphQLContext } from '../context';
 import {
-  InviteEntityMemberResponse,
-  InviteEntityMemberArgs,
+  InviteEntityUserRoleResponse,
+  InviteEntityUserRoleArgs,
   AcceptEntityInviteArgs,
   AcceptEntityInviteResponse,
 } from './invite.interfaces';
 import { User } from '@/models/User';
-import { EntityMember } from '@/models/EntityMember';
+import { EntityUserRole } from '@/models/EntityUserRole';
 import { Entity } from '@/models/Entity';
-import { MemberStatus } from '../entity/entity.interfaces';
+import { UserStatus } from '../entity/entity.interfaces';
 
 export const inviteMutations = {
-  inviteEntityMember: async (
+  inviteEntityUserRole: async (
     _: unknown,
-    { input }: InviteEntityMemberArgs,
+    { input }: InviteEntityUserRoleArgs,
     context: GraphQLContext
-  ): Promise<InviteEntityMemberResponse> => {
+  ): Promise<InviteEntityUserRoleResponse> => {
     if (!context.isAuthenticated) {
       throw createError.authentication('Not authenticated');
     }
@@ -40,6 +40,7 @@ export const inviteMutations = {
         rollNumber: input.rollNumber,
         batch: input.batch,
         role: input.role,
+        type: input.type,
         status: 'pending',
       });
 
@@ -54,8 +55,8 @@ export const inviteMutations = {
       if (error instanceof BaseError) {
         throw error;
       }
-      throw createError.database('Failed to invite entity member', {
-        operation: 'inviteEntityMember',
+      throw createError.database('Failed to invite entity user role', {
+        operation: 'inviteEntityUserRole',
         entityType: 'Invite',
         error,
       });
@@ -83,11 +84,11 @@ export const inviteMutations = {
       await invite.save();
 
       // add user to entitymembers
-      await EntityMember.create({
+      await EntityUserRole.create({
         userId: invite.userId,
         entityId: invite.entityId,
         roleId: '7e194669-d391-4e58-8279-3695285fdd04',
-        status: MemberStatus.ACTIVE,
+        status: UserStatus.ACTIVE,
       });
 
       // update entity metadata
