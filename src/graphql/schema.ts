@@ -10,6 +10,7 @@ import { alumniTypes } from './alumni/alumni.types';
 import { entityTypes } from './entity/entity.types';
 import { inviteTypes } from './invites/invite.types';
 import { groupTypes } from './groups/group.types';
+import { userTypes } from './user/user.types';
 
 // Import resolvers
 import { organizationQueries } from './organization/organization.queries';
@@ -20,13 +21,14 @@ import { superAdminMutations } from './super-admin/super-admin.mutations';
 import { adminQueries } from './admin/admin.queries';
 import { adminMutations } from './admin/admin.mutations';
 import { alumniMutations } from './alumni/alumni.mutations';
-import { userTypes } from './user/user.types';
 import { entityQueries } from './entity/entity.queries';
 import { entityMutations } from './entity/entity.mutations';
 import { inviteMutations } from './invites/invite.mutations';
 import { inviteQueries } from './invites/invite.queries';
 import { groupQueries } from './groups/group.queries';
 import { groupMutations } from './groups/group.mutations';
+import { userQueries } from './user/user.queries';
+import { userMutations } from './user/user.mutations';
 
 const typeDefs = gql`
   type Query {
@@ -47,6 +49,7 @@ const resolvers = {
     ...entityQueries,
     ...inviteQueries,
     ...groupQueries,
+    ...userQueries,
   },
   Mutation: {
     ...organizationMutations,
@@ -56,6 +59,7 @@ const resolvers = {
     ...entityMutations,
     ...inviteMutations,
     ...groupMutations,
+    ...userMutations,
   },
 };
 

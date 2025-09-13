@@ -37,7 +37,9 @@ export interface IInviteTokenPayload {
   email: string;
   orgId: string;
 }
-
+export interface IVerificationTokenPayload {
+  email: string;
+}
 export interface IClient extends Document {
   clientId: string;
   branchId: string;

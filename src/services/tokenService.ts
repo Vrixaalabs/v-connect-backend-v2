@@ -30,6 +30,7 @@ export class TokenService {
   static async createRefreshToken(
     userId: string,
     familyId?: string,
+    isVerified?: boolean,
     ip?: string,
     userAgent?: string
   ): Promise<{ token: string; record: IRefreshToken }> {
@@ -41,6 +42,7 @@ export class TokenService {
       id: this.generateRandomToken(),
       familyId: newFamilyId,
       userId,
+      isVerified,
       hash,
       expiresAt: new Date(Date.now() + this.getRefreshTokenTTL()),
       ip,
@@ -57,6 +59,7 @@ export class TokenService {
   static async rotateRefreshToken(
     oldToken: string,
     userId: string,
+    isVerified?: boolean,
     ip?: string,
     userAgent?: string
   ): Promise<{ token: string; record: IRefreshToken }> {
@@ -67,6 +70,7 @@ export class TokenService {
       userId,
       revokedAt: null,
       expiresAt: { $gt: new Date() },
+      isVerified,
     });
 
     if (!oldRecord) {
@@ -83,6 +87,7 @@ export class TokenService {
     const { token, record: newRecord } = await this.createRefreshToken(
       userId,
       oldRecord.familyId,
+      oldRecord.isVerified || false,
       ip,
       userAgent
     );
@@ -99,7 +104,8 @@ export class TokenService {
    */
   static async validateRefreshToken(
     token: string,
-    userId: string
+    userId: string,
+    isVerified?: boolean
   ): Promise<IRefreshToken> {
     const hash = this.hashToken(token);
 
@@ -108,6 +114,7 @@ export class TokenService {
       userId,
       revokedAt: null,
       expiresAt: { $gt: new Date() },
+      isVerified,
     });
 
     if (!record) {
