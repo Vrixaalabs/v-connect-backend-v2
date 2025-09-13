@@ -88,7 +88,7 @@ export const alumniTypes = gql`
 
     # AMA
     amaSessions(active: Boolean): [AMASession!]
-    amaSession(id: ID!): amaSession
+    amaSession(id: ID!): AMASession
 
     # Mock
     getMockAuthToken(userId: String!): MockTokenResponse
