@@ -9,6 +9,7 @@ import { parseTimeString } from '../utils/timeUtils';
 interface TokenPayload {
   userId: string;
   type: 'access' | 'refresh';
+  isVerified: boolean;
 }
 
 declare global {
@@ -37,11 +38,12 @@ const getRefreshTokenCookieOptions = (): {
 
 export const generateTokens = async (
   userId: string,
+  isVerified: boolean,
   ip?: string,
   userAgent?: string
 ): Promise<{ accessToken: string; refreshToken: string }> => {
   const accessToken = jwt.sign(
-    { userId, type: 'access' } as TokenPayload,
+    { userId, type: 'access', isVerified } as TokenPayload,
     config.jwt.accessSecret as jwt.Secret,
     { expiresIn: config.jwt.accessExpiresIn || '15m' } as jwt.SignOptions
   );
@@ -50,6 +52,7 @@ export const generateTokens = async (
   const { token: refreshToken } = await TokenService.createRefreshToken(
     userId,
     undefined, // new family
+    isVerified,
     ip,
     userAgent
   );
@@ -129,7 +132,7 @@ async function handleTokenRefresh(
 
   try {
     // Use TokenService to validate and rotate the refresh token
-    const userId = await verifyRefreshToken(refreshToken);
+    const userData = await verifyRefreshToken(refreshToken);
 
     // Get client info for audit trail
     const ip = req.ip || req.connection.remoteAddress || undefined;
@@ -137,7 +140,8 @@ async function handleTokenRefresh(
 
     // Generate new tokens with rotation
     const { accessToken, refreshToken: newRefreshToken } = await generateTokens(
-      userId,
+      userData.userId,
+      userData.isVerified,
       ip,
       userAgent
     );
@@ -146,7 +150,7 @@ async function handleTokenRefresh(
     setRefreshTokenCookie(res, newRefreshToken);
 
     // Find user
-    const user = await User.findOne({ userId });
+    const user = await User.findOne({ userId: userData.userId });
     if (!user) {
       return res.status(401).json({ message: 'User not found' });
     }
@@ -165,7 +169,7 @@ async function handleTokenRefresh(
   }
 }
 
-export const verifyRefreshToken = async (token: string): Promise<string> => {
+export const verifyRefreshToken = async (token: string, isVerified?: boolean): Promise<{ userId: string; isVerified: boolean }> => {
   try {
     // First, try to decode the JWT to get userId
     const decoded = jwt.verify(
@@ -178,9 +182,12 @@ export const verifyRefreshToken = async (token: string): Promise<string> => {
     }
 
     // Now validate the token using TokenService (this will check for reuse, expiration, etc.)
-    await TokenService.validateRefreshToken(token, decoded.userId);
+    await TokenService.validateRefreshToken(token, decoded.userId, isVerified);
 
-    return decoded.userId;
+    return {
+      userId: decoded.userId,
+      isVerified: decoded.isVerified,
+    }
   } catch (error) {
     if (error instanceof jwt.TokenExpiredError) {
       throw new Error('Refresh token expired');

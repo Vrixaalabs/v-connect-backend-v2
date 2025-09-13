@@ -1,5 +1,5 @@
 import jwt, { SignOptions } from 'jsonwebtoken';
-import { IInviteTokenPayload } from '@/types/types';
+import { IInviteTokenPayload, IVerificationTokenPayload } from '@/types/types';
 import { config } from '@/config/app.config';
 
 /**
@@ -18,4 +18,17 @@ export const generateInviteToken = (
 
 export const verifyInviteToken = (token: string): IInviteTokenPayload => {
   return jwt.verify(token, config.jwt.accessSecret) as IInviteTokenPayload;
+};
+
+
+export const generateVerificationToken = (
+  payload: IVerificationTokenPayload,
+  expiresIn: string
+): string => {
+  const options = { expiresIn } as SignOptions;
+  return jwt.sign(payload, config.jwt.accessSecret as jwt.Secret, options);
+};
+
+export const verifyVerificationToken = (token: string): IVerificationTokenPayload => {
+  return jwt.verify(token, config.jwt.accessSecret) as IVerificationTokenPayload;
 };

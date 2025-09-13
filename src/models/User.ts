@@ -21,6 +21,8 @@ export interface IUser extends Document {
   role: 'user' | 'admin' | 'super_admin';
   lastLoginAt?: Date;
   fullName?: string;
+  verificationToken?: string;
+  isVerified?: boolean;
   preferences?: {
     language?: string;
     theme?: 'light' | 'dark';
@@ -95,9 +97,18 @@ const userSchema = new Schema<IUser>(
       trim: true,
       lowercase: true,
       match: [
-        /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/,
+        /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
         'Please enter a valid email',
       ],
+    },
+    verificationToken: {
+      type: String,
+      required: false,
+    },
+    isVerified: {
+      type: Boolean,
+      required: false,
+      default: false,
     },
     password: {
       type: String,

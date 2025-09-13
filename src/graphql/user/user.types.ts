@@ -1,21 +1,5 @@
 import { gql } from 'apollo-server-express';
 
-export interface IUpdateUserArgs {
-  username?: string;
-  email?: string;
-  firstName?: string;
-  lastName?: string;
-}
-
-export interface Context {
-  isAuthenticated: boolean;
-}
-
-export interface IMockToken {
-  success: boolean;
-  newToken: string | null;
-}
-
 export const userTypes = gql`
   type User {
     _id: ID!
@@ -51,10 +35,29 @@ export const userTypes = gql`
     newToken: String
   }
 
+  type VerifyEmailPayload {
+    success: Boolean!
+    message: String!
+    user: User 
+  }
+
+  type ResendVerificationEmailPayload {
+    success: Boolean!
+    message: String!
+    user: User
+  }
+
+  type CheckEmailVerificationPayload {
+    success: Boolean!
+    message: String!
+    user: User
+  }
+
   extend type Query {
     me: User
     users: [User!]!
     getMockAuthToken(userId: String!): MockTokenResponse
+    checkEmailVerification(email: String!): CheckEmailVerificationPayload
   }
 
   extend type Mutation {
@@ -62,5 +65,7 @@ export const userTypes = gql`
     login(email: String!, password: String!): AuthPayload!
     updateUser(id: ID!, input: UpdateUserInput): UpdateUserPayload
     resetPassword(id: String!, newPassword: String!): UpdateUserPayload
+    verifyEmail(token: String!): VerifyEmailPayload
+    resendVerificationEmail(email: String!): VerifyEmailPayload
   }
 `;

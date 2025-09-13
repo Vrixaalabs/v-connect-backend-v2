@@ -10,16 +10,16 @@ export const alumniQueries = {
   me: async (
     _: unknown,
     __: unknown,
-    { isAuthenticated, userId }: GraphQLContext
+    context : GraphQLContext
   ) => {
     try {
-      if (!isAuthenticated || !userId) {
+      if (!context.isAuthenticated || !context.user) {
         throw createError.authentication('Not authenticated');
       }
 
-      const user = await User.findOne({ userId });
+      const user = await User.findOne({ userId: context.user.id });
       if (!user) {
-        throw createError.notFound(`User with ID ${userId} not found`);
+        throw createError.notFound(`User with ID ${context.user.id} not found`);
       }
 
       return user;
@@ -27,7 +27,7 @@ export const alumniQueries = {
       if (error instanceof BaseError) throw error;
       throw createError.database('Failed to fetch current user', {
         operation: 'me',
-        userId,
+        userId: context.user?.id,
         error,
       });
     }

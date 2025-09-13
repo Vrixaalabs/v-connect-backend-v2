@@ -5,6 +5,7 @@ export interface IRefreshToken extends Document {
   id: string;
   familyId: string;
   userId: string;
+  isVerified: boolean;
   hash: string;
   expiresAt: Date;
   rotatedTo?: string;

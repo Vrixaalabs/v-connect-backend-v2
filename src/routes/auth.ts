@@ -12,6 +12,9 @@ import { Role } from '../models/Role';
 import { IUser, User } from '../models/User';
 import { parseTimeString } from '../utils/timeUtils';
 import mongoose from 'mongoose';
+import { emailServices } from '@/services/emailServices';
+import { generateVerificationToken } from '@/utils/token.util';
+import { TOKEN_VALIDITY } from '@/utils/constant';
 
 // Predefined credentials for super admin creation
 // These should be set in environment variables in production
@@ -116,6 +119,8 @@ router.post(
             firstName,
             lastName,
             type,
+            isVerified: false,
+            verificationToken: generateVerificationToken({ email }, TOKEN_VALIDITY),
           },
         ],
         { session }
@@ -126,8 +131,13 @@ router.post(
         throw new Error('Failed to create user');
       }
 
+      await emailServices.sendVerificationEmail(user.email, {
+        product_name: 'VConnect',
+        verify_link: `${config.app.frontendUrl}/verify-email?token=${user.verificationToken}`,
+      });
+
       // Generate tokens
-      const { accessToken, refreshToken } = await generateTokens(user.userId);
+      const { accessToken, refreshToken } = await generateTokens(user.userId, user.isVerified || false);
 
       // Commit the transaction
       await session.commitTransaction();
@@ -189,6 +199,7 @@ router.post(
       // Generate tokens with client info
       const { accessToken, refreshToken } = await generateTokens(
         user.userId,
+        user.isVerified || false,
         ip,
         userAgent
       );
@@ -271,7 +282,7 @@ router.post(
       const decoded = jwt.verify(
         refreshToken,
         config.jwt.refreshSecret
-      ) as unknown as { userId: string; type: string };
+      ) as unknown as { userId: string; type: string; isVerified: boolean };
 
       if (decoded.type !== 'refresh') {
         return res.status(401).json({ message: 'Invalid token type' });
@@ -280,6 +291,7 @@ router.post(
       const { token: newRefreshToken } = await TokenService.rotateRefreshToken(
         refreshToken,
         decoded.userId,
+        decoded.isVerified || false,
         ip,
         userAgent
       );
@@ -427,6 +439,7 @@ router.post(
       // Generate tokens
       const { accessToken, refreshToken } = await generateTokens(
         user.userId,
+        user.isVerified || false,
         req.ip || req.connection.remoteAddress,
         req.get('User-Agent')
       );
