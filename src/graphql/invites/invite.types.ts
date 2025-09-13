@@ -10,16 +10,18 @@ export const inviteTypes = gql`
     role: String!
     rollNumber: String!
     batch: String!
+    type: String!
     createdAt: String!
     updatedAt: String!
   }
 
-  input InviteEntityMemberInput {
+  input InviteEntityUserRoleInput {
     email: String!
     entityId: String!
     role: String!
     rollNumber: String!
     batch: String!
+    type: String!
   }
 
   type IInvitesResponse {
@@ -28,7 +30,7 @@ export const inviteTypes = gql`
     invites: [Invite!]!
   }
 
-  type InviteEntityMemberResponse {
+  type InviteEntityUserRoleResponse {
     success: Boolean!
     message: String!
     invite: Invite
@@ -94,9 +96,9 @@ export const inviteTypes = gql`
   }
 
   extend type Mutation {
-    inviteEntityMember(
-      input: InviteEntityMemberInput!
-    ): InviteEntityMemberResponse
+    inviteEntityUserRole(
+      input: InviteEntityUserRoleInput!
+    ): InviteEntityUserRoleResponse
     acceptEntityInvite(
       input: AcceptEntityInviteInput!
     ): AcceptEntityInviteResponse
