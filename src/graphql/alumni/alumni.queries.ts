@@ -1,0 +1,205 @@
+import { GraphQLContext } from '../context';
+import { createError } from '../../middleware/errorHandler';
+import { User } from '../../models/User';
+import { AMASession } from '../../models/AMASession';
+import { JobInternship } from '../../models/JobInternship'
+import { BaseError } from '../../types/errors/base.error';
+
+export const alumniQueries = {
+  // Current logged-in user
+  me: async (
+    _: unknown,
+    __: unknown,
+    { isAuthenticated, userId }: GraphQLContext
+  ) => {
+    try {
+      if (!isAuthenticated || !userId) {
+        throw createError.authentication('Not authenticated');
+      }
+
+      const user = await User.findOne({ userId });
+      if (!user) {
+        throw createError.notFound(`User with ID ${userId} not found`);
+      }
+
+      return user;
+    } catch (error) {
+      if (error instanceof BaseError) throw error;
+      throw createError.database('Failed to fetch current user', {
+        operation: 'me',
+        userId,
+        error,
+      });
+    }
+  },
+
+  // Get user by ID
+  user: async (
+    _: unknown,
+    { id }: { id: string },
+    { isAuthenticated }: GraphQLContext
+  ) => {
+    try {
+      if (!isAuthenticated) {
+        throw createError.authentication('Not authenticated');
+      }
+
+      const user = await User.findById(id);
+      if (!user) {
+        throw createError.notFound(`User with ID ${id} not found`);
+      }
+
+      return user;
+    } catch (error) {
+      if (error instanceof BaseError) throw error;
+      throw createError.database('Failed to fetch user', {
+        operation: 'user',
+        id,
+        error,
+      });
+    }
+  },
+
+  // Get all users (with optional filters)
+  users: async (
+    _: unknown,
+    {
+      graduationYear,
+      department,
+    }: { graduationYear?: number; department?: string },
+    { isAuthenticated }: GraphQLContext
+  ) => {
+    try {
+      if (!isAuthenticated) {
+        throw createError.authentication('Not authenticated');
+      }
+
+      const query: Record<string, unknown> = {};
+      if (graduationYear) query['graduationYear'] = graduationYear;
+      if (department) query['department'] = department;
+
+      const users = await User.find(query);
+      return users;
+    } catch (error) {
+      if (error instanceof BaseError) throw error;
+      throw createError.database('Failed to fetch users', {
+        operation: 'users',
+        graduationYear,
+        department,
+        error,
+      });
+    }
+  },
+
+  // Get all AMA sessions (optionally filter by active)
+  amaSessions: async (
+    _: unknown,
+    { active }: { active?: boolean },
+    { isAuthenticated }: GraphQLContext
+  ) => {
+    try {
+      if (!isAuthenticated) {
+        throw createError.authentication('Not authenticated');
+      }
+
+      const filter: Record<string, unknown> = {};
+      if (active !== undefined) {
+        filter.active = active;
+      }
+
+      const sessions = await AMASession.find(filter).sort({ scheduledAt: -1 });
+      return sessions;
+    } catch (error) {
+      if (error instanceof BaseError) throw error;
+      throw createError.database('Failed to fetch AMA sessions', {
+        operation: 'amaSessions',
+        active,
+        error,
+      });
+    }
+  },
+
+  // Get a single AMA session
+  amaSession: async (
+    _: unknown,
+    { id }: { id: string },
+    { isAuthenticated }: GraphQLContext
+  ) => {
+    try {
+      if (!isAuthenticated) {
+        throw createError.authentication('Not authenticated');
+      }
+
+      const session = await AMASession.findById(id);
+      if (!session) {
+        throw createError.notFound(`AMA session with ID ${id} not found`);
+      }
+
+      return session;
+    } catch (error) {
+      if (error instanceof BaseError) throw error;
+      throw createError.database('Failed to fetch AMA session', {
+        operation: 'amaSession',
+        id,
+        error,
+      });
+    }
+  },
+
+  // Get Job and Internship listings
+
+  getJobInternship: async (
+  _: unknown,
+  { active }: { active?: boolean },
+  { isAuthenticated }: GraphQLContext
+) => {
+  try {
+    if (!isAuthenticated) {
+      throw createError.authentication('Not authenticated');
+    }
+
+    const filter: Record<string, unknown> = {};
+    if (active !== undefined) {
+      filter.active = active;
+    }
+
+    const jobs = await JobInternship.find(filter).sort({ createdAt: -1 });
+    return jobs;
+  } catch (error) {
+    if (error instanceof BaseError) throw error;
+    throw createError.database('Failed to fetch job/internship listings', {
+      operation: 'getJobInternship',
+      active,
+      error,
+    });
+  }
+},
+
+
+// Get a single Job/Internship by ID
+getSingleJobInternship: async (
+  _: unknown,
+  { id }: { id: string },
+  { isAuthenticated }: GraphQLContext
+) => {
+  try {
+    if (!isAuthenticated) {
+      throw createError.authentication('Not authenticated');
+    }
+
+    const job = await JobInternship.findById(id);
+    if (!job) {
+      throw createError.notFound(`Job/Internship with ID ${id} not found`);
+    }
+
+    return job;
+  } catch (error) {
+    if (error instanceof BaseError) throw error;
+    throw createError.database('Failed to fetch Job/Internship', {
+      operation: 'jobInternship',
+      id,
+      error,
+    });
+  }
+},
+};
