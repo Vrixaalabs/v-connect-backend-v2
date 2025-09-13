@@ -6,6 +6,7 @@ import { sharedTypes } from './shared/shared.types';
 import { organizationTypes } from './organization/organization.types';
 import { superAdminTypes } from './super-admin/super-admin.types';
 import { adminTypes } from './admin/admin.types';
+import { alumniTypes } from './alumni/alumni.types';
 import { entityTypes } from './entity/entity.types';
 import { inviteTypes } from './invites/invite.types';
 import { groupTypes } from './groups/group.types';
@@ -14,9 +15,11 @@ import { groupTypes } from './groups/group.types';
 import { organizationQueries } from './organization/organization.queries';
 import { organizationMutations } from './organization/organization.mutations';
 import { superAdminQueries } from './super-admin/super-admin.queries';
+import { alumniQueries } from './alumni/alumni.queries';
 import { superAdminMutations } from './super-admin/super-admin.mutations';
 import { adminQueries } from './admin/admin.queries';
 import { adminMutations } from './admin/admin.mutations';
+import { alumniMutations } from './alumni/alumni.mutations';
 import { userTypes } from './user/user.types';
 import { entityQueries } from './entity/entity.queries';
 import { entityMutations } from './entity/entity.mutations';
@@ -40,6 +43,7 @@ const resolvers = {
     ...organizationQueries,
     ...superAdminQueries,
     ...adminQueries,
+    ...alumniQueries,
     ...entityQueries,
     ...inviteQueries,
     ...groupQueries,
@@ -48,6 +52,7 @@ const resolvers = {
     ...organizationMutations,
     ...superAdminMutations,
     ...adminMutations,
+    ...alumniMutations,
     ...entityMutations,
     ...inviteMutations,
     ...groupMutations,
@@ -62,6 +67,7 @@ export const schema = makeExecutableSchema({
     superAdminTypes,
     adminTypes,
     userTypes,
+    alumniTypes,
     entityTypes,
     inviteTypes,
     groupTypes,
