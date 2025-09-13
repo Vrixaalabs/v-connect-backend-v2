@@ -38,7 +38,7 @@ export interface IEntitySettings {
 }
 
 export interface IEntityMetadata {
-  totalMembers: number;
+  totalUsers: number;
   totalPosts: number;
   totalEvents: number;
   lastActivityAt?: Date;
@@ -197,7 +197,7 @@ export interface IEntityUserRoleResponse extends IBaseResponse {
 }
 
 export interface IEntityUserRolesResponse extends IBaseResponse {
-  members: IEntityUserRole[];
+  users: IEntityUserRole[];
   total: number;
   page: number;
   limit: number;

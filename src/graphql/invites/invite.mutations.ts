@@ -102,10 +102,10 @@ export const inviteMutations = {
 
       // entity.metadata!.totalMembers++;
       if (entity.metadata) {
-        entity.metadata.totalMembers = entity?.metadata?.totalMembers || 0 + 1;
+        entity.metadata.totalUsers = entity?.metadata?.totalUsers || 0 + 1;
       } else {
         entity.metadata = {
-          totalMembers: 1,
+          totalUsers: 1,
           totalPosts: 0,
           totalEvents: 0,
           lastActivityAt: new Date(),

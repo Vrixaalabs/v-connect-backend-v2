@@ -43,7 +43,7 @@ export const entityTypes = `#graphql
   }
 
   type EntityMetadata {
-    totalMembers: Int!
+    totalUsers: Int!
     totalPosts: Int!
     totalEvents: Int!
     lastActivityAt: String

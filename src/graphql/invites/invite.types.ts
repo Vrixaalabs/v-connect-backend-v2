@@ -96,7 +96,7 @@ export const inviteTypes = gql`
   }
 
   extend type Mutation {
-    inviteEntityMember(
+    inviteEntityUserRole(
       input: InviteEntityUserRoleInput!
     ): InviteEntityUserRoleResponse
     acceptEntityInvite(

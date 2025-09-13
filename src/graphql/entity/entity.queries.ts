@@ -317,7 +317,7 @@ export const entityQueries = {
       return {
         success: true,
         message: 'Entity members retrieved successfully',
-        members: entityMembers as IEntityUserRole[],
+        users: entityMembers as IEntityUserRole[],
         total: entityMembers.length,
         page: 1,
         limit: entityMembers.length,

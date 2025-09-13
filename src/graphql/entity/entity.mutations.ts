@@ -320,10 +320,10 @@ export const entityMutations = {
       }
 
       if (entity.metadata) {
-        entity.metadata.totalMembers++;
+        entity.metadata.totalUsers++;
       } else {
         entity.metadata = {
-          totalMembers: 1,
+          totalUsers: 1,
           totalPosts: 0,
           totalEvents: 0,
           lastActivityAt: new Date(),
