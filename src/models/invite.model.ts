@@ -1,32 +1,54 @@
 import { IInvite } from '@/types/types';
 import { Schema, model } from 'mongoose';
+import { v4 as uuidv4 } from 'uuid';
 
 const inviteSchema = new Schema<IInvite>(
   {
+    inviteId: {
+      type: String,
+      required: true,
+      default: () => uuidv4(),
+    },
     email: {
       type: String,
       required: true,
     },
-    orgId: {
-      type: Schema.Types.ObjectId,
-      required: true,
-      ref: 'Org',
+    status: {
+      type: String,
+      enum: ['pending', 'accepted', 'rejected'],
+      default: 'pending',
     },
-    roleId: {
-      type: Schema.Types.ObjectId,
+    entityId: {
+      type: String,
       required: true,
+      ref: 'Entity',
+      refPath: 'entityId',
+      get: (v: string) => v,
+      set: (v: string) => v,
     },
-    token: {
+    userId: {
+      type: String,
+      required: true,
+      ref: 'User',
+      refPath: 'userId',
+      get: (v: string) => v,
+      set: (v: string) => v,
+    },
+    role: {
       type: String,
       required: true,
     },
-    expiresAt: {
-      type: Date,
+    rollNumber: {
+      type: String,
       required: true,
     },
-    used: {
-      type: Boolean,
-      default: false,
+    batch: {
+      type: String,
+      required: true,
+    },
+    type: {
+      type: String,
+      required: true,
     },
   },
   { timestamps: true }

@@ -21,6 +21,7 @@ import { connectRedis } from '@/config/redis';
 import { context } from '@/graphql/context';
 import { schema } from '@/graphql/schema';
 import { socketHandler } from '@/socket/socketHandler';
+import { ensureSystemRoles } from '@/models/Role';
 
 const app = express();
 const PORT = config.app.port;
@@ -132,6 +133,17 @@ async function startServer(): Promise<void> {
     // Connect to MongoDB
     await connectDatabase();
     logger.info('Connected to MongoDB Atlas');
+
+    // Ensure system roles are created
+    try {
+      await ensureSystemRoles();
+      logger.info('System roles initialized');
+    } catch (error) {
+      logger.error('Failed to initialize system roles', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      // Don't exit process, as the app can still function with existing roles
+    }
 
     // Connect to Redis
     await connectRedis();

@@ -1,4 +1,4 @@
- export enum ActivityCategory {
+export enum ActivityCategory {
   DRAMA = 'DRAMA',
   MUSIC = 'MUSIC',
   SHOOTING = 'SHOOTING',
@@ -38,7 +38,7 @@ export interface IFriendConnection {
   status: 'pending' | 'accepted' | 'rejected' | 'blocked';
   createdAt: string;
   updatedAt: string;
-acceptedAt?: string;
+  acceptedAt?: string;
 }
 
 export interface IActivityRequest {

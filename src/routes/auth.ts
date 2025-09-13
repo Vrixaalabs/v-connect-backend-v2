@@ -1,6 +1,5 @@
 import { Request, Response, Router } from 'express';
 import jwt from 'jsonwebtoken';
-import bcrypt from 'bcryptjs';
 import { config } from '../config/app.config';
 import {
   clearRefreshTokenCookie,
@@ -17,8 +16,10 @@ import mongoose from 'mongoose';
 // Predefined credentials for super admin creation
 // These should be set in environment variables in production
 const SUPER_ADMIN_SECRET = process.env.SUPER_ADMIN_SECRET || 'thisisasecretkey';
-const SUPER_ADMIN_VERIFICATION_ID = process.env.SUPER_ADMIN_VERIFICATION_ID || 'admin@vconnect.com';
-const SUPER_ADMIN_VERIFICATION_PASSWORD = process.env.SUPER_ADMIN_VERIFICATION_PASSWORD || 'admin123';
+const SUPER_ADMIN_VERIFICATION_ID =
+  process.env.SUPER_ADMIN_VERIFICATION_ID || 'admin@vconnect.com';
+const SUPER_ADMIN_VERIFICATION_PASSWORD =
+  process.env.SUPER_ADMIN_VERIFICATION_PASSWORD || 'admin123';
 
 const router = Router();
 
@@ -32,6 +33,7 @@ interface RegisterBody {
   username: string;
   firstName: string;
   lastName: string;
+  type: string;
 }
 
 interface LoginBody {
@@ -44,6 +46,7 @@ interface CreateSuperAdminBody {
   verificationPassword: string;
   secretKey: string;
   email: string;
+  type: string;
   password: string;
   username: string;
   firstName: string;
@@ -59,7 +62,7 @@ router.post(
     session.startTransaction();
 
     try {
-      const { email, password, username, firstName, lastName } = req.body;
+      const { email, password, username, firstName, lastName, type } = req.body;
 
       // Validate request body
       if (
@@ -67,12 +70,13 @@ router.post(
         !password ||
         !username ||
         !firstName ||
-        !lastName
+        !lastName ||
+        !type
       ) {
         await session.endSession();
         return res.status(400).json({
           message:
-            'All fields are required: email, password, username, firstName, lastName',
+            'All fields are required: email, password, username, firstName, lastName, type',
         });
       }
 
@@ -92,8 +96,8 @@ router.post(
         });
       }
       // Get admin role - do this outside transaction as it's just a read
-      const adminRole = await Role.findOne({ name: 'Admin' });
-      if (!adminRole) {
+      const memberRole = await Role.findOne({ name: 'Member' });
+      if (!memberRole) {
         await session.abortTransaction();
         session.endSession();
         return res.status(500).json({
@@ -111,6 +115,7 @@ router.post(
             username: username.toLowerCase(),
             firstName,
             lastName,
+            type,
           },
         ],
         { session }
@@ -139,6 +144,7 @@ router.post(
           username: user.username,
           firstName: user.firstName,
           lastName: user.lastName,
+          type: user.type,
         },
       });
     } catch (error) {
@@ -215,6 +221,7 @@ router.get('/me', verifyAccessToken, async (req: Request, res: Response) => {
         username: user.username,
         firstName: user.firstName,
         lastName: user.lastName,
+        type: user.type,
       },
     });
   } catch (error) {
@@ -337,6 +344,7 @@ router.post(
         username,
         firstName,
         lastName,
+        type,
       } = req.body;
 
       // Verify the predefined credentials
@@ -353,12 +361,19 @@ router.post(
       }
 
       // Validate request body
-      if (!email || !password || !username || !firstName || !lastName) {
+      if (
+        !email ||
+        !password ||
+        !username ||
+        !firstName ||
+        !lastName ||
+        !type
+      ) {
         await session.abortTransaction();
         session.endSession();
         return res.status(400).json({
           message:
-            'All fields are required: email, password, username, firstName, lastName',
+            'All fields are required: email, password, username, firstName, lastName, type',
         });
       }
 
@@ -440,9 +455,6 @@ router.post(
       // If anything fails, abort the transaction
       await session.abortTransaction();
       session.endSession();
-
-      // Log the error for debugging but don't expose details
-      console.error('Super admin creation error:', error);
 
       return res.status(500).json({
         message: 'Failed to create super admin. Please try again later.',

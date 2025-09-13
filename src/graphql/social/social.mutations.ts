@@ -8,15 +8,15 @@ export const socialMutations = {
     { user, isAuthenticated }: GraphQLContext
   ) => {
     if (!isAuthenticated) throw new Error('Not authenticated');
-    return socialService.updateProfile(user!.id, input);
+    return socialService.updateProfile(user?.id as string, input);
   },
   updateFriendPortfolio: async (
     _: unknown,
-    { input }: { input: { entries: Array<any> } },
+    { input }: { input: { entries: Array<unknown> } },
     { user, isAuthenticated }: GraphQLContext
   ) => {
     if (!isAuthenticated) throw new Error('Not authenticated');
-    return socialService.replacePortfolio(user!.id, input.entries);
+    return socialService.replacePortfolio(user?.id as string, input.entries);
   },
   sendFriendRequest: async (
     _: unknown,
@@ -24,7 +24,7 @@ export const socialMutations = {
     { user, isAuthenticated }: GraphQLContext
   ) => {
     if (!isAuthenticated) throw new Error('Not authenticated');
-    return socialService.sendFriendRequest(user!.id, targetUserId);
+    return socialService.sendFriendRequest(user?.id as string, targetUserId);
   },
   acceptFriendRequest: async (
     _: unknown,
@@ -32,7 +32,10 @@ export const socialMutations = {
     { user, isAuthenticated }: GraphQLContext
   ) => {
     if (!isAuthenticated) throw new Error('Not authenticated');
-    return socialService.acceptFriendRequest(user!.id, requesterUserId);
+    return socialService.acceptFriendRequest(
+      user?.id as string,
+      requesterUserId
+    );
   },
   rejectFriendRequest: async (
     _: unknown,
@@ -40,7 +43,10 @@ export const socialMutations = {
     { user, isAuthenticated }: GraphQLContext
   ) => {
     if (!isAuthenticated) throw new Error('Not authenticated');
-    return socialService.rejectFriendRequest(user!.id, requesterUserId);
+    return socialService.rejectFriendRequest(
+      user?.id as string,
+      requesterUserId
+    );
   },
   removeFriend: async (
     _: unknown,
@@ -48,15 +54,24 @@ export const socialMutations = {
     { user, isAuthenticated }: GraphQLContext
   ) => {
     if (!isAuthenticated) throw new Error('Not authenticated');
-    return socialService.removeFriend(user!.id, friendUserId);
+    return socialService.removeFriend(user?.id as string, friendUserId);
   },
   createRequest: async (
     _: unknown,
-    { title, description, category }: { title: string; description: string; category: string },
+    {
+      title,
+      description,
+      category,
+    }: { title: string; description: string; category: string },
     { user, isAuthenticated }: GraphQLContext
   ) => {
     if (!isAuthenticated) throw new Error('Not authenticated');
-    return socialService.createRequest(user!.id, title, description, category);
+    return socialService.createRequest(
+      user?.id as string,
+      title,
+      description,
+      category
+    );
   },
   respondToRequest: async (
     _: unknown,
@@ -64,7 +79,7 @@ export const socialMutations = {
     { user, isAuthenticated }: GraphQLContext
   ) => {
     if (!isAuthenticated) throw new Error('Not authenticated');
-    return socialService.respondToRequest(user!.id, requestId);
+    return socialService.respondToRequest(user?.id as string, requestId);
   },
   withdrawResponse: async (
     _: unknown,
@@ -72,6 +87,6 @@ export const socialMutations = {
     { user, isAuthenticated }: GraphQLContext
   ) => {
     if (!isAuthenticated) throw new Error('Not authenticated');
-    return socialService.withdrawResponse(user!.id, requestId);
+    return socialService.withdrawResponse(user?.id as string, requestId);
   },
 };

@@ -1,88 +1,131 @@
-import InviteService from '@/graphql/invites/invite.services';
-import {
-  AcceptInviteArgs,
-  AcceptInviteResult,
-  Context,
-  InviteUserArgs,
-  InviteUserResult,
-  SeedInviteResult,
-} from '@/graphql/invites/invite.types';
 import { createError } from '@/middleware/errorHandler';
-import { dummyInvites } from '@/mock/invite.mock';
 import { InviteModel } from '@/models/invite.model';
 import { BaseError } from '../../types/errors/base.error';
+import { GraphQLContext } from '../context';
+import {
+  InviteEntityUserRoleResponse,
+  InviteEntityUserRoleArgs,
+  AcceptEntityInviteArgs,
+  AcceptEntityInviteResponse,
+} from './invite.interfaces';
+import { User } from '@/models/User';
+import { EntityUserRole } from '@/models/EntityUserRole';
+import { Entity } from '@/models/Entity';
+import { UserStatus } from '../entity/entity.interfaces';
 
 export const inviteMutations = {
-  inviteUser: async (
+  inviteEntityUserRole: async (
     _: unknown,
-    args: InviteUserArgs,
-    { isAuthenticated }: Context
-  ): Promise<InviteUserResult> => {
-    if (!isAuthenticated) {
+    { input }: InviteEntityUserRoleArgs,
+    context: GraphQLContext
+  ): Promise<InviteEntityUserRoleResponse> => {
+    if (!context.isAuthenticated) {
       throw createError.authentication('Not authenticated');
     }
+
     try {
-      const { invite, inviteUrl } = await InviteService.sendInvite(
-        args.email,
-        args.orgId,
-        args.roleId
-      );
+      // check if user exists
+      const user = await User.findOne({ email: input.email });
+      if (!user) {
+        throw createError.notFound('User not found', {
+          entityType: 'User',
+          email: input.email,
+        });
+      }
+
+      const invite = await InviteModel.create({
+        userId: user.userId,
+        entityId: input.entityId,
+        email: input.email,
+        rollNumber: input.rollNumber,
+        batch: input.batch,
+        role: input.role,
+        type: input.type,
+        status: 'pending',
+      });
+
+      // await sendInviteEmail(invite);
+
       return {
         success: true,
         message: 'Invite sent',
         invite,
-        inviteUrl,
       };
     } catch (error) {
       if (error instanceof BaseError) {
         throw error;
       }
-      throw createError.database('Failed to send invite', {
-        operation: 'send',
+      throw createError.database('Failed to invite entity user role', {
+        operation: 'inviteEntityUserRole',
         entityType: 'Invite',
+        error,
       });
     }
   },
-  acceptInvite: async (
+  acceptEntityInvite: async (
     _: unknown,
-    args: AcceptInviteArgs
-  ): Promise<AcceptInviteResult> => {
+    { input }: AcceptEntityInviteArgs,
+    context: GraphQLContext
+  ): Promise<AcceptEntityInviteResponse> => {
+    if (!context.isAuthenticated) {
+      throw createError.authentication('Not authenticated');
+    }
+
     try {
-      const { newUser, invite, inviteToken, redirectUri, message, success } =
-        await InviteService.handleInvite(args.token);
+      const invite = await InviteModel.findOne({ inviteId: input.inviteId });
+      if (!invite) {
+        throw createError.notFound('Invite not found', {
+          entityType: 'Invite',
+          inviteId: input.inviteId,
+        });
+      }
+
+      invite.status = 'accepted';
+      await invite.save();
+
+      // add user to entitymembers
+      await EntityUserRole.create({
+        userId: invite.userId,
+        entityId: invite.entityId,
+        roleId: '7e194669-d391-4e58-8279-3695285fdd04',
+        status: UserStatus.ACTIVE,
+      });
+
+      // update entity metadata
+      const entity = await Entity.findOne({ entityId: invite.entityId });
+      if (!entity) {
+        throw createError.notFound('Entity not found', {
+          entityType: 'Entity',
+          entityId: invite.entityId,
+        });
+      }
+
+      // entity.metadata!.totalMembers++;
+      if (entity.metadata) {
+        entity.metadata.totalUsers = entity?.metadata?.totalUsers || 0 + 1;
+      } else {
+        entity.metadata = {
+          totalUsers: 1,
+          totalPosts: 0,
+          totalEvents: 0,
+          lastActivityAt: new Date(),
+        };
+      }
+      await entity.save();
 
       return {
-        success: Boolean(success),
-        message,
-        redirectUri,
-        newUser,
-        invite,
-        inviteToken,
-      };
-    } catch (error) {
-      if (error instanceof BaseError) {
-        throw error;
-      }
-      throw createError.database('Failed to accept invite', {
-        operation: 'accept',
-        entityType: 'Invite',
-      });
-    }
-  },
-  seedInvite: async (): Promise<SeedInviteResult> => {
-    try {
-      await InviteModel.insertMany(dummyInvites);
-      return {
         success: true,
-        message: 'Dummy invites inserted successfully',
+        message: 'Invite accepted successfully',
+        invite,
       };
     } catch (error) {
       if (error instanceof BaseError) {
         throw error;
       }
-      throw createError.database('Failed to save invites', {
-        operation: 'save',
+      throw createError.database('Failed to accept entity invite', {
+        operation: 'acceptEntityInvite',
         entityType: 'Invite',
+        error,
       });
     }
   },

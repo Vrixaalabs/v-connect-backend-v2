@@ -121,6 +121,43 @@ export async function ensureSystemRoles(): Promise<void> {
       ],
       isSystemRole: true,
     },
+    {
+      name: 'Student',
+      description: 'Basic student access',
+      permissions: [
+        {
+          resource: 'users',
+          actions: ['read'],
+        },
+      ],
+      isSystemRole: true,
+    },
+    {
+      name: 'Faculty',
+      description: 'Basic faculty access',
+      permissions: [
+        {
+          resource: 'users',
+          actions: ['read'],
+        },
+        {
+          resource: 'organization',
+          actions: ['read'],
+        },
+      ],
+      isSystemRole: true,
+    },
+    {
+      name: 'Alumni',
+      description: 'Basic alumni access',
+      permissions: [
+        {
+          resource: 'users',
+          actions: ['read'],
+        },
+      ],
+      isSystemRole: true,
+    },
   ];
 
   for (const role of systemRoles) {

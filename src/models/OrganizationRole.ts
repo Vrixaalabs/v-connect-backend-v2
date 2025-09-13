@@ -1,9 +1,10 @@
 import { Schema, model } from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
 
-export interface IInstituteRole {
+export interface IOrganizationRole {
+  organizationRoleId: string;
   roleId: string;
-  instituteId: string;
+  organizationId: string;
   name: string;
   description: string;
   permissions: string[];
@@ -13,16 +14,22 @@ export interface IInstituteRole {
   updatedAt: Date;
 }
 
-const InstituteRoleSchema = new Schema<IInstituteRole>({
+const OrganizationRoleSchema = new Schema<IOrganizationRole>({
+  organizationRoleId: {
+    type: String,
+    default: () => uuidv4(),
+    unique: true,
+  },
   roleId: {
     type: String,
     default: () => uuidv4(),
     unique: true,
   },
-  instituteId: {
+  organizationId: {
     type: String,
     required: true,
-    ref: 'Institute',
+    ref: 'Organization',
+    refPath: 'organizationId',
   },
   name: {
     type: String,
@@ -32,10 +39,12 @@ const InstituteRoleSchema = new Schema<IInstituteRole>({
     type: String,
     required: true,
   },
-  permissions: [{
-    type: String,
-    required: true,
-  }],
+  permissions: [
+    {
+      type: String,
+      required: true,
+    },
+  ],
   isDefault: {
     type: Boolean,
     default: false,
@@ -44,6 +53,7 @@ const InstituteRoleSchema = new Schema<IInstituteRole>({
     type: String,
     required: true,
     ref: 'User',
+    refPath: 'userId',
   },
   createdAt: {
     type: Date,
@@ -56,12 +66,15 @@ const InstituteRoleSchema = new Schema<IInstituteRole>({
 });
 
 // Pre-save middleware to update the updatedAt timestamp
-InstituteRoleSchema.pre('save', function(next) {
+OrganizationRoleSchema.pre('save', function (next) {
   this.updatedAt = new Date();
   next();
 });
 
-// Ensure unique role names per institute
-InstituteRoleSchema.index({ instituteId: 1, name: 1 }, { unique: true });
+// Ensure unique role names per organization
+OrganizationRoleSchema.index({ organizationId: 1, name: 1 }, { unique: true });
 
-export const InstituteRole = model<IInstituteRole>('InstituteRole', InstituteRoleSchema);
+export const OrganizationRole = model<IOrganizationRole>(
+  'OrganizationRole',
+  OrganizationRoleSchema
+);

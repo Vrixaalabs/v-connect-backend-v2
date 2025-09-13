@@ -1,22 +1,20 @@
 import { GraphQLContext } from '../context';
 import { createError } from '../../middleware/errorHandler';
 import { Institute } from '../../models/Institute';
-import { InstituteUserRole } from '../../models/InstituteUserRole';
+import { OrganizationUserRole } from '../../models/OrganizationUserRole';
 import { User } from '../../models/User';
 import { BaseError } from '../../types/errors/base.error';
 import {
-  SuperAdminDashboardStats,
-  RecentActivity,
-  SystemStatus,
   GetRecentActivitiesArgs,
-  GetInstituteAdminsArgs,
-  InstituteAdminsResponse,
-  InstituteAdminResponse,
   DashboardStatsResponse,
   RecentActivitiesResponse,
   SystemStatusResponse,
   SuperAdminSettingsResponse,
+  GetOrganizationAdminsArgs,
+  OrganizationAdminsResponse,
+  OrganizationAdminResponse,
 } from './super-admin.interfaces';
+import { Organization } from '@/models/Organization';
 
 export const superAdminQueries = {
   getSuperAdminDashboardStats: async (
@@ -26,27 +24,25 @@ export const superAdminQueries = {
   ): Promise<DashboardStatsResponse> => {
     try {
       if (!isAuthenticated || !isSuperAdmin) {
-        throw createError.authorization('Not authorized to access super admin dashboard');
+        throw createError.authorization(
+          'Not authorized to access super admin dashboard'
+        );
       }
 
-      const [
-        totalInstitutes,
-        totalStudents,
-        totalDepartments,
-        activeAdmins,
-      ] = await Promise.all([
-        Institute.countDocuments({ isActive: true }),
-        Institute.aggregate([
-          { $match: { isActive: true } },
-          { $group: { _id: null, total: { $sum: '$studentsCount' } } },
-        ]).then(result => result[0]?.total || 0),
-        Institute.aggregate([
-          { $match: { isActive: true } },
-          { $project: { departmentCount: { $size: '$departments' } } },
-          { $group: { _id: null, total: { $sum: '$departmentCount' } } },
-        ]).then(result => result[0]?.total || 0),
-        InstituteUserRole.countDocuments({ isActive: true }),
-      ]);
+      const [totalInstitutes, totalStudents, totalDepartments, activeAdmins] =
+        await Promise.all([
+          Institute.countDocuments({ isActive: true }),
+          Institute.aggregate([
+            { $match: { isActive: true } },
+            { $group: { _id: null, total: { $sum: '$studentsCount' } } },
+          ]).then(result => result[0]?.total || 0),
+          Institute.aggregate([
+            { $match: { isActive: true } },
+            { $project: { departmentCount: { $size: '$departments' } } },
+            { $group: { _id: null, total: { $sum: '$departmentCount' } } },
+          ]).then(result => result[0]?.total || 0),
+          OrganizationUserRole.countDocuments({ isActive: true }),
+        ]);
 
       return {
         success: true,
@@ -56,16 +52,19 @@ export const superAdminQueries = {
           totalStudents,
           totalDepartments,
           activeAdmins,
-        }
+        },
       };
     } catch (error) {
       if (error instanceof BaseError) {
         throw error;
       }
-      throw createError.database('Failed to fetch super admin dashboard stats', {
-        operation: 'getSuperAdminDashboardStats',
-        error,
-      });
+      throw createError.database(
+        'Failed to fetch super admin dashboard stats',
+        {
+          operation: 'getSuperAdminDashboardStats',
+          error,
+        }
+      );
     }
   },
 
@@ -76,43 +75,49 @@ export const superAdminQueries = {
   ): Promise<RecentActivitiesResponse> => {
     try {
       if (!isAuthenticated || !isSuperAdmin) {
-        throw createError.authorization('Not authorized to access super admin activities');
+        throw createError.authorization(
+          'Not authorized to access super admin activities'
+        );
       }
 
       // For now, we'll combine recent activities from different sources
       // In a real implementation, you might want to have a dedicated ActivityLog collection
-      const [newInstitutes, newAdmins] = await Promise.all([
-        Institute.find()
+      const [newOrganizations, newAdmins] = await Promise.all([
+        Organization.find()
           .sort({ createdAt: -1 })
           .limit(limit)
-          .then(institutes => institutes.map(institute => ({
-            id: institute.instituteId,
-            type: 'institute_added',
-            message: `New institute "${institute.name}" was added`,
-            time: institute.createdAt.toISOString(),
-            instituteId: institute.instituteId,
-          }))),
-        InstituteUserRole.find()
+          .then(organizations =>
+            organizations.map(organization => ({
+              id: organization.organizationId,
+              type: 'organization_added',
+              message: `New organization "${organization.name}" was added`,
+              time: organization.createdAt.toISOString(),
+              instituteId: organization.organizationId,
+            }))
+          ),
+        OrganizationUserRole.find()
           .sort({ createdAt: -1 })
           .limit(limit)
-          .then(roles => roles.map(role => ({
-            id: role.assignmentId,
-            type: 'admin_assigned',
-            message: `New admin assigned to institute`,
-            time: role.createdAt.toISOString(),
-            instituteId: role.instituteId,
-            userId: role.userId,
-          }))),
+          .then(roles =>
+            roles.map(role => ({
+              id: role.assignmentId,
+              type: 'admin_assigned',
+              message: `New admin assigned to organization`,
+              time: role.createdAt.toISOString(),
+              instituteId: role.organizationId,
+              userId: role.userId,
+            }))
+          ),
       ]);
 
-      const allActivities = [...newInstitutes, ...newAdmins]
+      const allActivities = [...newOrganizations, ...newAdmins]
         .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
         .slice(0, limit);
 
       return {
         success: true,
         message: 'Recent activities fetched successfully',
-        activities: allActivities
+        activities: allActivities,
       };
     } catch (error) {
       if (error instanceof BaseError) {
@@ -132,7 +137,9 @@ export const superAdminQueries = {
   ): Promise<SystemStatusResponse> => {
     try {
       if (!isAuthenticated || !isSuperAdmin) {
-        throw createError.authorization('Not authorized to access system status');
+        throw createError.authorization(
+          'Not authorized to access system status'
+        );
       }
 
       // In a real implementation, you would get this from your monitoring system
@@ -144,7 +151,7 @@ export const superAdminQueries = {
           status: 'operational',
           load: 0.25, // 25% system load
           lastUpdated: new Date().toISOString(),
-        }
+        },
       };
     } catch (error) {
       if (error instanceof BaseError) {
@@ -157,27 +164,30 @@ export const superAdminQueries = {
     }
   },
 
-  getInstituteAdmins: async (
+  getOrganizationAdmins: async (
     _: unknown,
-    { page = 1, limit = 10, search }: GetInstituteAdminsArgs,
+    { page = 1, limit = 10, search }: GetOrganizationAdminsArgs,
     { isAuthenticated, isSuperAdmin }: GraphQLContext
-  ): Promise<InstituteAdminsResponse> => {
+  ): Promise<OrganizationAdminsResponse> => {
     try {
       if (!isAuthenticated) {
         throw createError.authentication('Not authenticated');
       }
 
       if (!isSuperAdmin) {
-        throw createError.authorization('Only super admin can view all institute admins');
+        throw createError.authorization(
+          'Only super admin can view all organization admins'
+        );
       }
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const query: any = {};
       if (search) {
         query['userId'] = { $regex: search, $options: 'i' };
       }
 
-      const total = await InstituteUserRole.countDocuments(query);
-      const admins = await InstituteUserRole.find(query)
+      const total = await OrganizationUserRole.countDocuments(query);
+      const admins = await OrganizationUserRole.find(query)
         .populate('roleId')
         .skip((page - 1) * limit)
         .limit(limit)
@@ -185,7 +195,7 @@ export const superAdminQueries = {
 
       return {
         success: true,
-        message: 'Institute admins fetched successfully',
+        message: 'Organization admins fetched successfully',
         admins,
         total,
         page,
@@ -195,9 +205,9 @@ export const superAdminQueries = {
       if (error instanceof BaseError) {
         throw error;
       }
-      throw createError.database('Failed to fetch institute admins', {
+      throw createError.database('Failed to fetch organization admins', {
         operation: 'getAdmins',
-        entityType: 'InstituteUserRole',
+        entityType: 'OrganizationUserRole',
         error,
       });
     }
@@ -214,7 +224,9 @@ export const superAdminQueries = {
       }
 
       if (!isSuperAdmin) {
-        throw createError.authorization('Only super admin can access these settings');
+        throw createError.authorization(
+          'Only super admin can access these settings'
+        );
       }
 
       // Get settings from user document or a separate settings collection
@@ -228,12 +240,12 @@ export const superAdminQueries = {
         throw createError.notFound('Settings not found');
       }
 
-      const { twoFactorCode, ...userSettings } = settings.settings;
+      const { ...userSettings } = settings.settings;
 
       return {
         success: true,
         message: 'Settings fetched successfully',
-        settings: userSettings
+        settings: userSettings,
       };
     } catch (error) {
       if (error instanceof BaseError) {
@@ -246,40 +258,44 @@ export const superAdminQueries = {
     }
   },
 
-  getInstituteAdmin: async (
+  getOrganizationAdmin: async (
     _: unknown,
     { adminId }: { adminId: string },
     { isAuthenticated, isSuperAdmin }: GraphQLContext
-  ): Promise<InstituteAdminResponse>=> {
+  ): Promise<OrganizationAdminResponse> => {
     try {
       if (!isAuthenticated) {
         throw createError.authentication('Not authenticated');
       }
 
       if (!isSuperAdmin) {
-        throw createError.authorization('Only super admin can view institute admin details');
+        throw createError.authorization(
+          'Only super admin can view organization admin details'
+        );
       }
 
-      const admin = await InstituteUserRole.findOne({ assignmentId: adminId }).populate('roleId');
+      const admin = await OrganizationUserRole.findOne({
+        assignmentId: adminId,
+      }).populate('roleId');
       if (!admin) {
         throw createError.notFound(`Admin with ID ${adminId} not found`, {
-          entityType: 'InstituteUserRole',
+          entityType: 'OrganizationUserRole',
           entityId: adminId,
         });
       }
 
       return {
         success: true,
-        message: 'Institute admin fetched successfully',
+        message: 'Organization admin fetched successfully',
         admin,
       };
     } catch (error) {
       if (error instanceof BaseError) {
         throw error;
       }
-      throw createError.database('Failed to fetch institute admin', {
+      throw createError.database('Failed to fetch organization admin', {
         operation: 'getAdmin',
-        entityType: 'InstituteUserRole',
+        entityType: 'OrganizationUserRole',
         adminId,
         error,
       });

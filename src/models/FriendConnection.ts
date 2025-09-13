@@ -1,33 +1,118 @@
 import mongoose, { Document, Schema } from 'mongoose';
-
-export type FriendConnectionStatus = 'pending' | 'accepted' | 'rejected' | 'blocked';
+import { v4 as uuidv4 } from 'uuid';
 
 export interface IFriendConnection extends Document {
-  requesterUserId: string;
-  recipientUserId: string;
-  status: FriendConnectionStatus;
+  connectionId: string;
+  userId: string;
+  friendId: string;
+  status: 'pending' | 'accepted' | 'rejected' | 'blocked';
+  initiatedBy: string;
+  acceptedAt?: Date;
+  rejectedAt?: Date;
+  blockedAt?: Date;
+  blockedBy?: string;
+  metadata?: {
+    lastInteractionAt?: Date;
+    mutualFriends?: number;
+    commonGroups?: number;
+  };
   createdAt: Date;
   updatedAt: Date;
-  acceptedAt?: Date;
 }
 
 const friendConnectionSchema = new Schema<IFriendConnection>(
   {
-    requesterUserId: { type: String, required: true, index: true },
-    recipientUserId: { type: String, required: true, index: true },
+    connectionId: {
+      type: String,
+      required: true,
+      unique: true,
+      default: uuidv4,
+    },
+    userId: {
+      type: String,
+      required: true,
+      ref: 'User',
+      refPath: 'userId',
+    },
+    friendId: {
+      type: String,
+      required: true,
+      ref: 'User',
+      refPath: 'userId',
+    },
     status: {
       type: String,
       enum: ['pending', 'accepted', 'rejected', 'blocked'],
       default: 'pending',
-      index: true,
     },
-    acceptedAt: { type: Date },
+    initiatedBy: {
+      type: String,
+      required: true,
+      ref: 'User',
+      refPath: 'userId',
+    },
+    acceptedAt: {
+      type: Date,
+    },
+    rejectedAt: {
+      type: Date,
+    },
+    blockedAt: {
+      type: Date,
+    },
+    blockedBy: {
+      type: String,
+      ref: 'User',
+      refPath: 'userId',
+    },
+    metadata: {
+      lastInteractionAt: {
+        type: Date,
+      },
+      mutualFriends: {
+        type: Number,
+        default: 0,
+      },
+      commonGroups: {
+        type: Number,
+        default: 0,
+      },
+    },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+  }
 );
 
-friendConnectionSchema.index({ requesterUserId: 1, recipientUserId: 1 }, { unique: true });
-friendConnectionSchema.index({ status: 1, updatedAt: -1 });
+// Ensure unique connections between users
+friendConnectionSchema.index({ userId: 1, friendId: 1 }, { unique: true });
+
+// Prevent self-connections
+friendConnectionSchema.pre('save', function (next) {
+  if (this.userId === this.friendId) {
+    const err = new Error('Cannot create friend connection with self');
+    return next(err);
+  }
+  next();
+});
+
+// Update metadata timestamps based on status changes
+friendConnectionSchema.pre('save', function (next) {
+  if (this.isModified('status')) {
+    switch (this.status) {
+      case 'accepted':
+        this.acceptedAt = new Date();
+        break;
+      case 'rejected':
+        this.rejectedAt = new Date();
+        break;
+      case 'blocked':
+        this.blockedAt = new Date();
+        break;
+    }
+  }
+  next();
+});
 
 export const FriendConnection = mongoose.model<IFriendConnection>(
   'FriendConnection',

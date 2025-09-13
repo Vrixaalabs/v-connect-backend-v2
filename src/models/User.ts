@@ -4,7 +4,10 @@ import { v4 as uuidv4 } from 'uuid';
 import { config } from '../config/app.config';
 import { Organization, IOrganization } from './Organization';
 import { IRole, Role } from './Role';
-import { IUserOrganizationRole, UserOrganizationRole } from './UserOrganizationRole';
+import {
+  OrganizationUserRole as OrganizationUserRoleModel,
+  OrganizationUserRole,
+} from './OrganizationUserRole';
 
 export interface IUser extends Document {
   userId: string;
@@ -13,6 +16,7 @@ export interface IUser extends Document {
   firstName: string;
   lastName: string;
   password: string;
+  type: 'student' | 'faculty' | 'alumni';
   status: 'active' | 'inactive' | 'suspended';
   role: 'user' | 'admin' | 'super_admin';
   lastLoginAt?: Date;
@@ -58,7 +62,7 @@ export interface IUser extends Document {
     organizationId: string,
     roleId: string,
     isPrimary?: boolean
-  ): Promise<IUserOrganizationRole>;
+  ): Promise<OrganizationUserRole>;
   removeFromOrganization(organizationId: string): Promise<void>;
   getPermissionsForOrganization(organizationId: string): Promise<
     Array<{
@@ -107,6 +111,11 @@ const userSchema = new Schema<IUser>(
     lastName: {
       type: String,
       required: true,
+    },
+    type: {
+      type: String,
+      enum: ['student', 'faculty', 'alumni'],
+      default: 'student',
     },
     status: {
       type: String,
@@ -192,8 +201,11 @@ userSchema.pre('save', async function (next) {
 
   try {
     // Use higher number of rounds for super admin
-    const rounds = this.role === 'super_admin' ? 12 : (config.jwt.bcryptRounds as number || 10);
-    console.log('Hashing password with rounds:', rounds, 'for role:', this.role);
+    const rounds =
+      this.role === 'super_admin'
+        ? 12
+        : (config.jwt.bcryptRounds as number) || 10;
+
     const salt = await bcrypt.genSalt(rounds);
     this.password = await bcrypt.hash(this.password, salt);
     next();
@@ -218,11 +230,13 @@ userSchema.methods.getOrganizations = async function (): Promise<
     isPrimary: boolean;
   }>
 > {
-  const memberships = await UserOrganizationRole.find({ userId: this.userId })
+  const memberships = await OrganizationUserRole.find({
+    userId: this.userId,
+  })
     .populate({
       path: 'organizationId',
       model: 'Organization',
-      select: 'franchiseeId name status',
+      select: 'organizationId name status',
     })
     .populate({
       path: 'roleId',
@@ -231,12 +245,19 @@ userSchema.methods.getOrganizations = async function (): Promise<
     })
     .sort({ isPrimary: -1, createdAt: -1 });
 
-  return memberships.map(membership => ({
-    organization: membership.organizationId as unknown as IOrganization,
-    role: membership.roleId as unknown as IRole,
-    status: membership.status,
-    isPrimary: membership.isPrimary,
-  }));
+  return memberships.map(membership => {
+    const typedMembership = membership as unknown as OrganizationUserRole & {
+      organizationId: IOrganization;
+      roleId: IRole;
+    };
+
+    return {
+      organization: typedMembership.organizationId,
+      role: typedMembership.roleId,
+      status: typedMembership.status,
+      isPrimary: typedMembership.isPrimary,
+    };
+  });
 };
 
 // Get user's primary organization
@@ -245,7 +266,7 @@ userSchema.methods.getPrimaryOrganization = async function (): Promise<{
   role: IRole;
   status: string;
 } | null> {
-  const membership = await UserOrganizationRole.findOne({
+  const membership = await OrganizationUserRoleModel.findOne({
     userId: this.userId,
     isPrimary: true,
   })
@@ -262,10 +283,15 @@ userSchema.methods.getPrimaryOrganization = async function (): Promise<{
 
   if (!membership) return null;
 
+  const typedMembership = membership as unknown as OrganizationUserRole & {
+    organizationId: IOrganization;
+    roleId: IRole;
+  };
+
   return {
-    organization: membership.organizationId as unknown as IOrganization,
-    role: membership.roleId as unknown as IRole,
-    status: membership.status,
+    organization: typedMembership.organizationId,
+    role: typedMembership.roleId,
+    status: typedMembership.status,
   };
 };
 
@@ -274,7 +300,7 @@ userSchema.methods.hasRole = async function (
   organizationId: string,
   roleName: string
 ): Promise<boolean> {
-  const membership = await UserOrganizationRole.findOne({
+  const membership = await OrganizationUserRoleModel.findOne({
     userId: this.userId,
     organizationId,
     status: 'active',
@@ -293,7 +319,7 @@ userSchema.methods.addToOrganization = async function (
   organizationId: string,
   roleId: string,
   isPrimary: boolean = false
-): Promise<IUserOrganizationRole> {
+): Promise<OrganizationUserRole> {
   // Check if franchisee and role exist
   const [organization, role] = await Promise.all([
     Organization.findOne({ organizationId }),
@@ -305,7 +331,7 @@ userSchema.methods.addToOrganization = async function (
   }
 
   // Create or update the membership
-  const membership = await UserOrganizationRole.findOneAndUpdate(
+  const membership = await OrganizationUserRoleModel.findOneAndUpdate(
     {
       userId: this.userId,
       organizationId,
@@ -313,7 +339,9 @@ userSchema.methods.addToOrganization = async function (
     {
       roleId,
       isPrimary,
-      status: 'active',
+      status: 'active' as const,
+      isActive: true,
+      assignedBy: this.userId, // Using current user as assigner
       $setOnInsert: {
         metadata: {
           acceptedAt: new Date(),
@@ -323,8 +351,13 @@ userSchema.methods.addToOrganization = async function (
     {
       upsert: true,
       new: true,
+      runValidators: true, // Ensure schema validation runs on update
     }
   );
+
+  if (!membership) {
+    throw new Error('Failed to create or update organization membership');
+  }
 
   return membership;
 };
@@ -333,7 +366,7 @@ userSchema.methods.addToOrganization = async function (
 userSchema.methods.removeFromOrganization = async function (
   organizationId: string
 ): Promise<void> {
-  await UserOrganizationRole.deleteOne({
+  await OrganizationUserRoleModel.deleteOne({
     userId: this.userId,
     organizationId,
   });
@@ -348,7 +381,7 @@ userSchema.methods.getPermissionsForOrganization = async function (
     actions: string[];
   }>
 > {
-  const membership = await UserOrganizationRole.findOne({
+  const membership = await OrganizationUserRoleModel.findOne({
     userId: this.userId,
     organizationId,
     status: 'active',
